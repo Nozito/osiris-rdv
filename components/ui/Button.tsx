@@ -1,6 +1,7 @@
 "use client";
+// OSIRIS UX — ripple on click
 
-import { forwardRef } from "react";
+import { forwardRef, useRef } from "react";
 import { Loader2 } from "lucide-react";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -22,12 +23,15 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       children,
       className = "",
       disabled,
+      onMouseDown,
       ...props
     },
     ref
   ) => {
+    const innerRef = useRef<HTMLButtonElement>(null);
+
     const base =
-      "inline-flex items-center justify-center gap-2 font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-40 disabled:cursor-not-allowed select-none";
+      "relative overflow-hidden inline-flex items-center justify-center gap-2 font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-40 disabled:cursor-not-allowed select-none";
 
     const variants = {
       primary:
@@ -46,10 +50,42 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       lg: "h-12 px-6 text-base rounded-btn",
     };
 
+    // OSIRIS UX — ripple effect on click
+    const handleMouseDown = (e: React.MouseEvent<HTMLButtonElement>) => {
+      const btn = (ref as React.RefObject<HTMLButtonElement>)?.current ?? innerRef.current;
+      if (btn) {
+        const rect = btn.getBoundingClientRect();
+        const size = Math.max(rect.width, rect.height) * 2;
+        const x = e.clientX - rect.left - size / 2;
+        const y = e.clientY - rect.top - size / 2;
+        const ripple = document.createElement("span");
+        Object.assign(ripple.style, {
+          position: "absolute",
+          left: `${x}px`,
+          top: `${y}px`,
+          width: `${size}px`,
+          height: `${size}px`,
+          borderRadius: "50%",
+          background: "rgba(255,255,255,0.2)",
+          transform: "scale(0)",
+          animation: "ripple 0.55s ease-out forwards",
+          pointerEvents: "none",
+        });
+        btn.appendChild(ripple);
+        setTimeout(() => ripple.remove(), 600);
+      }
+      onMouseDown?.(e);
+    };
+
     return (
       <button
-        ref={ref}
+        ref={(node) => {
+          (innerRef as React.MutableRefObject<HTMLButtonElement | null>).current = node;
+          if (typeof ref === "function") ref(node);
+          else if (ref) (ref as React.MutableRefObject<HTMLButtonElement | null>).current = node;
+        }}
         disabled={disabled || loading}
+        onMouseDown={handleMouseDown}
         className={`${base} ${variants[variant]} ${sizes[size]} ${className}`}
         {...props}
       >

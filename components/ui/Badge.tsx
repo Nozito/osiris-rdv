@@ -30,16 +30,24 @@ export function Badge({
   dot = false,
 }: BadgeProps) {
   return (
+    // OSIRIS UX — subtle scale + dot pulse on hover
     <span
       className={`
         inline-flex items-center gap-1.5 rounded-full border font-medium
+        group cursor-default select-none
+        transition-transform duration-200 hover:scale-[1.05]
         ${variants[variant]}
         ${size === "sm" ? "text-xs px-2 py-0.5" : "text-sm px-2.5 py-1"}
       `}
     >
       {dot && (
         <span
-          className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColors[variant]}`}
+          className={`
+            w-1.5 h-1.5 rounded-full shrink-0
+            transition-opacity duration-200
+            group-hover:animate-pulse
+            ${dotColors[variant]}
+          `}
         />
       )}
       {children}

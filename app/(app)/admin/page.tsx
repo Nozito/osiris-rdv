@@ -1,8 +1,12 @@
 export const dynamic = "force-dynamic";
+import type { Metadata } from "next";
+export const metadata: Metadata = { title: "Administration" };
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createServerClient } from "@/lib/supabase/server";
 import { StatusBadge } from "@/components/ui/Badge";
+import { KpiCard } from "@/components/ui/KpiCard";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { formatPrice } from "@/lib/pricing";
 import type { Lead, Profile } from "@/types";
 import {
@@ -10,8 +14,7 @@ import {
   Users,
   DollarSign,
   TrendingUp,
-  ChevronLeft,
-  BookUser,
+  FileText,
 } from "lucide-react";
 
 export default async function AdminPage() {
@@ -56,99 +59,43 @@ export default async function AdminPage() {
     .filter((l) => l.status === "signed")
     .reduce((s, l) => s + (l.adjusted_price ?? l.total_one_time), 0);
 
+  const conversionRate = allLeads.length
+    ? Math.round(
+        (allLeads.filter((l) => l.status === "signed").length / allLeads.length) * 100
+      )
+    : 0;
+
   const statuses = ["draft", "sent", "signed", "lost"] as const;
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-white/8 bg-surface/50 backdrop-blur sticky top-0 z-20">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard"
-              className="text-muted hover:text-textc transition-colors"
-            >
-              <ChevronLeft size={18} />
-            </Link>
-            <div>
-              <h1 className="text-xl font-bold text-textc font-display flex items-center gap-2">
-                <Shield size={18} className="text-accent" />
-                Administration
-              </h1>
-              <p className="text-xs text-muted">Tous les leads — vue globale</p>
-            </div>
-          </div>
-          <Link
-            href="/clients"
-            className="flex items-center gap-1.5 text-xs text-muted hover:text-textc transition-colors"
-          >
-            <BookUser size={14} />
-            <span className="hidden sm:inline">Base clients</span>
-          </Link>
-        </div>
-      </header>
-
       <main className="max-w-6xl mx-auto px-4 py-6">
-        {/* Stats globales */}
+        {/* OSIRIS UX — breadcrumb */}
+        <Breadcrumb
+          items={[
+            { label: "OSIRIS", href: "/dashboard" },
+            { label: "Administration", href: "/admin" },
+            { label: "Tous les leads" },
+          ]}
+        />
+
+        {/* OSIRIS UX — animated KPI cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {[
-            {
-              label: "Total leads",
-              value: allLeads.length,
-              icon: <Users size={18} />,
-              format: "number",
-            },
-            {
-              label: "Signés",
-              value: allLeads.filter((l) => l.status === "signed").length,
-              icon: <TrendingUp size={18} />,
-              format: "number",
-            },
-            {
-              label: "Taux de signature",
-              value: allLeads.length
-                ? Math.round(
-                    (allLeads.filter((l) => l.status === "signed").length /
-                      allLeads.length) *
-                      100
-                  )
-                : 0,
-              icon: <TrendingUp size={18} />,
-              format: "percent",
-            },
-            {
-              label: "CA total signé",
-              value: totalRevenue,
-              icon: <DollarSign size={18} />,
-              format: "price",
-            },
-          ].map((stat, i) => (
-            <div
-              key={i}
-              className="rounded-card bg-surface border border-white/8 p-4"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-accent">{stat.icon}</span>
-                <span className="text-xs text-muted">{stat.label}</span>
-              </div>
-              <p className="text-2xl font-bold text-textc font-display">
-                {stat.format === "price"
-                  ? formatPrice(stat.value)
-                  : stat.format === "percent"
-                  ? `${stat.value}%`
-                  : stat.value}
-              </p>
-            </div>
-          ))}
+          <KpiCard label="Total leads"       value={allLeads.length}                              icon={<Users size={18} />}       format="number" />
+          <KpiCard label="Signés"            value={allLeads.filter((l) => l.status === "signed").length} icon={<TrendingUp size={18} />}  format="number" />
+          <KpiCard label="Taux de signature" value={conversionRate}                               icon={<TrendingUp size={18} />}  format="percent" />
+          <KpiCard label="CA total signé"    value={totalRevenue}                                 icon={<DollarSign size={18} />}  format="price"  glint />
         </div>
 
         {/* Répartition par statut */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-          {statuses.map((s) => {
+          {statuses.map((s, i) => {
             const count = allLeads.filter((l) => l.status === s).length;
             return (
               <div
                 key={s}
-                className="rounded-2xl bg-surface border border-white/8 px-4 py-3 flex items-center justify-between"
+                className="lead-row-enter rounded-2xl bg-surface border border-white/8 px-4 py-3 flex items-center justify-between"
+                style={{ animationDelay: `${i * 60}ms` }}
               >
                 <StatusBadge status={s} />
                 <span className="text-lg font-bold text-textc">{count}</span>
@@ -158,7 +105,7 @@ export default async function AdminPage() {
         </div>
 
         {/* Leads par commercial */}
-        {Object.entries(grouped).map(([email, leads]) => (
+        {Object.entries(grouped).map(([email, groupLeads]) => (
           <div
             key={email}
             className="rounded-card bg-surface border border-white/8 overflow-hidden mb-4"
@@ -166,37 +113,36 @@ export default async function AdminPage() {
             <div className="px-5 py-4 border-b border-white/8 flex items-center justify-between bg-surface2">
               <div>
                 <p className="text-sm font-semibold text-textc">
-                  {leads[0]?.profiles?.full_name ?? email}
+                  {groupLeads[0]?.profiles?.full_name ?? email}
                 </p>
                 <p className="text-xs text-muted">{email}</p>
               </div>
-              <span className="text-xs text-muted">{leads.length} lead(s)</span>
+              <span className="text-xs text-muted">{groupLeads.length} lead(s)</span>
             </div>
 
             <div className="divide-y divide-white/8">
-              {leads.map((lead) => (
+              {groupLeads.map((lead, i) => (
+                /* OSIRIS UX — staggered entrance + status-colored left border on hover */
                 <Link
                   key={lead.id}
                   href={`/rdv/${lead.id}`}
-                  className="flex items-center gap-4 px-5 py-3.5 hover:bg-white/[0.02] transition-colors group"
+                  className="lead-row-enter flex items-center gap-4 px-5 py-3.5 transition-colors group"
+                  style={{ animationDelay: `${i * 40}ms` }}
+                  data-lead-row
+                  data-status={lead.status}
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-textc truncate group-hover:text-accent transition-colors">
                       {lead.client_name || "Sans nom"}
-                      {lead.client_company
-                        ? ` — ${lead.client_company}`
-                        : ""}
+                      {lead.client_company ? ` — ${lead.client_company}` : ""}
                     </p>
                     <p className="text-xs text-muted">
-                      {lead.project_type?.replace(/-/g, " ") ??
-                        "Type non défini"}
+                      {lead.project_type?.replace(/-/g, " ") ?? "Type non défini"}
                     </p>
                   </div>
                   <div className="flex items-center gap-4">
                     <span className="text-sm font-semibold text-textc hidden sm:block">
-                      {formatPrice(
-                        lead.adjusted_price ?? lead.total_one_time
-                      )}
+                      {formatPrice(lead.adjusted_price ?? lead.total_one_time)}
                     </span>
                     <StatusBadge status={lead.status} />
                     <span className="text-xs text-faint hidden md:block">
@@ -210,8 +156,19 @@ export default async function AdminPage() {
         ))}
 
         {allLeads.length === 0 && (
+          /* OSIRIS UX — animated empty state */
           <div className="text-center py-16">
-            <p className="text-muted text-sm">Aucun lead dans la base</p>
+            <FileText
+              size={28}
+              className="text-faint mx-auto mb-3"
+              style={{ animation: "float 3s ease-in-out infinite" }}
+            />
+            <p
+              className="text-muted text-sm"
+              style={{ animation: "fadeInUp 0.3s ease-out 0.1s both" }}
+            >
+              Aucun lead dans la base
+            </p>
           </div>
         )}
       </main>

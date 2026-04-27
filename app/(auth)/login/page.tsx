@@ -25,7 +25,11 @@ export default function LoginPage() {
     });
 
     if (authError) {
-      setError("Email ou mot de passe incorrect.");
+      const isNetworkError = authError.message?.toLowerCase().includes("fetch") || authError.status === 0;
+      setError(isNetworkError
+        ? "Erreur réseau — vérifiez votre connexion."
+        : "Email ou mot de passe incorrect."
+      );
       setLoading(false);
       return;
     }
@@ -70,6 +74,7 @@ export default function LoginPage() {
                 />
                 <input
                   type="email"
+                  autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -90,6 +95,7 @@ export default function LoginPage() {
                 />
                 <input
                   type="password"
+                  autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required

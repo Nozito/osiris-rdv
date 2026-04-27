@@ -34,6 +34,8 @@
 
 html {
   height: 100%;
+  /* OSIRIS UX — smooth scroll */
+  scroll-behavior: smooth;
 }
 
 body {
@@ -42,6 +44,8 @@ body {
   color: #f8fafc;
   font-family: "Satoshi", sans-serif;
   -webkit-font-smoothing: antialiased;
+  /* OSIRIS UX — prevent horizontal overflow */
+  overflow-x: hidden;
 }
 
 ::selection {
@@ -66,4 +70,121 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+/* ============================================================
+   OSIRIS UX — Keyframe animations
+   ============================================================ */
+
+/* Shimmer for skeleton loading */
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+/* Float for empty state icons */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-6px); }
+}
+
+/* Staggered row entrance */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Toast slide-in from right */
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(110%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Glint sweep for CA card */
+@keyframes glint {
+  0%   { left: -60px; opacity: 0; }
+  15%  { opacity: 1; }
+  100% { left: 110%; opacity: 0; }
+}
+
+/* Toast progress bar drain */
+@keyframes toastProgress {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+
+/* Ripple on buttons */
+@keyframes ripple {
+  from { transform: scale(0); opacity: 0.35; }
+  to   { transform: scale(1); opacity: 0; }
+}
+
+/* Mobile drawer slide down */
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   OSIRIS UX — Skeleton shimmer utility
+   ============================================================ */
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #1a1f2e 25%,
+    #242938 50%,
+    #1a1f2e 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+/* ============================================================
+   OSIRIS UX — Lead row hover: status-colored left border
+   ============================================================ */
+
+[data-lead-row] {
+  border-left: 3px solid transparent;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    transform 100ms ease;
+}
+[data-lead-row][data-status="draft"]:hover  { border-left-color: #475569; background-color: rgba(255,255,255,0.015); }
+[data-lead-row][data-status="sent"]:hover   { border-left-color: #2563eb; background-color: rgba(255,255,255,0.015); }
+[data-lead-row][data-status="signed"]:hover { border-left-color: #22c55e; background-color: rgba(255,255,255,0.015); }
+[data-lead-row][data-status="lost"]:hover   { border-left-color: #ef4444; background-color: rgba(255,255,255,0.015); }
+[data-lead-row]:active { transform: scale(0.998); }
+
+/* ============================================================
+   OSIRIS UX — Staggered row entrance
+   ============================================================ */
+
+.lead-row-enter {
+  animation: fadeInUp 0.28s ease-out both;
+}
+
+/* ============================================================
+   OSIRIS UX — Typography: fluid KPI numbers
+   ============================================================ */
+
+.kpi-value {
+  font-size: clamp(1.4rem, 4vw, 2rem);
+}
+
+/* ============================================================
+   OSIRIS UX — Reduced motion: disable all animations
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

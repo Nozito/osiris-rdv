@@ -1,4 +1,6 @@
 export const dynamic = "force-dynamic";
+import type { Metadata } from "next";
+export const metadata: Metadata = { title: "Nouveau RDV" };
 
 import { createServerClient } from "@/lib/supabase/server";
 import { WizardShell } from "@/components/wizard/WizardShell";

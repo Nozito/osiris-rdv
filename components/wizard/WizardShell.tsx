@@ -10,6 +10,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Save, Trash2, AlertTriangle } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { PriceSidebar, MobilePriceBar } from "@/components/PriceSidebar";
 import { Step1Client } from "./Step1Client";
@@ -22,6 +23,7 @@ import { Step7Recommandation } from "./Step7Recommandation";
 import { Step8Recap } from "./Step8Recap";
 import { createClient } from "@/lib/supabase/client";
 import { calcTotal } from "@/lib/pricing";
+import { toast } from "@/components/ui/Toast";
 import type { WizardData } from "@/types";
 import { WIZARD_INITIAL_DATA } from "@/types";
 
@@ -58,9 +60,10 @@ export function useWizard() {
 interface WizardShellProps {
   initialData?: Partial<WizardData>;
   existingLeadId?: string;
+  initialStatus?: string;
 }
 
-export function WizardShell({ initialData, existingLeadId }: WizardShellProps) {
+export function WizardShell({ initialData, existingLeadId, initialStatus }: WizardShellProps) {
   const [data, setData] = useState<WizardData>({ ...WIZARD_INITIAL_DATA, ...initialData });
   const [currentStep, setCurrentStep] = useState(0);
   const [leadId, setLeadId] = useState<string | null>(existingLeadId ?? null);
@@ -116,7 +119,8 @@ export function WizardShell({ initialData, existingLeadId }: WizardShellProps) {
           techOptionIds: d.techOptions,
         });
 
-        const payload = {
+        // Champs de configuration — on n'écrase JAMAIS le statut en autosave
+        const configPayload = {
           commercial_id: user.id,
           client_id: resolvedClientId,
           client_name: d.clientName,
@@ -135,18 +139,22 @@ export function WizardShell({ initialData, existingLeadId }: WizardShellProps) {
           total_monthly: monthly,
           adjusted_price: d.adjustedPrice,
           notes: d.notes,
-          status: "draft",
         };
 
         if (id) {
-          await supabase.from("leads").update(payload).eq("id", id);
+          // UPDATE — on ne touche pas au statut existant
+          const { error } = await supabase.from("leads").update(configPayload).eq("id", id);
+          if (error) toast.error("Erreur lors de la sauvegarde");
           return { leadId: id, clientId: resolvedClientId };
         } else {
-          const { data: inserted } = await supabase
+          // INSERT — nouveau lead, démarre en "draft"
+          const { data: inserted, error } = await supabase
             .from("leads")
-            .insert(payload)
+            .insert({ ...configPayload, status: "draft" })
             .select("id")
             .single();
+          if (error) toast.error("Erreur lors de la création");
+          else toast.success("Lead créé avec succès ✓");
           return { leadId: inserted?.id ?? null, clientId: resolvedClientId };
         }
       } finally {
@@ -182,7 +190,9 @@ export function WizardShell({ initialData, existingLeadId }: WizardShellProps) {
   const handleDelete = useCallback(async () => {
     if (!leadId) { router.push("/dashboard"); return; }
     setDeleting(true);
-    await supabase.from("leads").delete().eq("id", leadId).eq("status", "draft");
+    const { error } = await supabase.from("leads").delete().eq("id", leadId);
+    if (error) { toast.error("Erreur lors de la suppression"); setDeleting(false); return; }
+    toast.success("Lead supprimé");
     router.push("/dashboard");
   }, [leadId, supabase, router]);
 
@@ -194,7 +204,7 @@ export function WizardShell({ initialData, existingLeadId }: WizardShellProps) {
     <Step5Technique key="5" />,
     <Step6Budget key="6" />,
     <Step7Recommandation key="7" />,
-    <Step8Recap key="8" leadId={leadId} />,
+    <Step8Recap key="8" leadId={leadId} initialStatus={(initialStatus ?? "draft") as import("@/types").LeadStatus} />,
   ];
 
   const variants = {
@@ -215,52 +225,65 @@ export function WizardShell({ initialData, existingLeadId }: WizardShellProps) {
         <header className="sticky top-0 z-30 bg-bg/95 backdrop-blur border-b border-white/8">
           <div className="max-w-6xl mx-auto px-4 py-3">
 
-            {/* Top row */}
-            <div className="flex items-center justify-between mb-2.5">
-              <a
+            {/* Top row: brand + contexte + statut save */}
+            <div className="flex items-center gap-3 mb-2.5">
+              {/* Retour dashboard */}
+              <Link
                 href="/dashboard"
-                className="text-muted hover:text-textc transition-colors text-sm flex items-center gap-1"
+                className="flex items-center gap-1 text-muted hover:text-textc transition-colors shrink-0"
               >
                 <ChevronLeft size={15} />
-                <span className="hidden sm:inline">Dashboard</span>
-              </a>
+                <span className="text-[13px] font-bold font-display hidden sm:block">OSIRIS</span>
+              </Link>
 
-              <div className="flex items-center gap-2.5">
-                {saving && (
-                  <span className="text-xs text-faint animate-pulse hidden sm:block">Sauvegarde…</span>
-                )}
-                {/* Étape courante sur mobile */}
-                <span className="sm:hidden text-xs font-medium text-textc">
+              {/* Séparateur vertical — desktop seulement */}
+              <span className="hidden sm:block h-4 w-px bg-white/10 shrink-0" />
+
+              {/* Contexte étape */}
+              <div className="flex-1 min-w-0">
+                {/* Mobile : nom de l'étape courante */}
+                <p className="sm:hidden text-[13px] font-medium text-textc truncate">
                   {STEPS[currentStep].label}
-                </span>
-                <span className="text-xs text-faint">
-                  {currentStep + 1}/{STEPS.length}
+                </p>
+                {/* Desktop : sous-titre statique */}
+                <p className="hidden sm:block text-[12px] text-muted truncate">
+                  {existingLeadId ? "Modifier le lead" : "Nouveau RDV"}
+                </p>
+              </div>
+
+              {/* Statut save + compteur */}
+              <div className="flex items-center gap-2 shrink-0">
+                {saving && (
+                  <span className="text-xs text-faint animate-pulse">Sauvegarde…</span>
+                )}
+                <span className="text-xs text-faint tabular-nums">
+                  {currentStep + 1}<span className="opacity-40">/{STEPS.length}</span>
                 </span>
               </div>
             </div>
 
             {/* Mobile : barre de progression */}
             <div className="sm:hidden">
-              <div className="h-1.5 rounded-full bg-surface2 overflow-hidden">
+              <div className="h-1 rounded-full bg-surface2 overflow-hidden">
                 <motion.div
                   className="h-full bg-accent rounded-full"
                   initial={false}
                   animate={{ width: `${progress}%` }}
-                  transition={{ duration: 0.3 }}
+                  transition={{ duration: 0.35, ease: "easeInOut" }}
                 />
               </div>
             </div>
 
-            {/* Desktop : pastilles d'étapes */}
+            {/* Desktop : stepper avec pastilles */}
             <div className="hidden sm:flex items-center gap-0.5">
               {STEPS.map((step, i) => (
                 <div key={i} className="flex items-center gap-0.5 flex-1 min-w-0">
                   <div
                     className={`
-                      flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center
+                      shrink-0 w-5 h-5 rounded-full flex items-center justify-center
                       text-[10px] font-bold transition-all duration-300
                       ${i < currentStep
-                        ? "bg-accent text-white"
+                        ? "bg-accent text-white shadow-[0_0_8px_rgba(37,99,235,0.5)]"
                         : i === currentStep
                         ? "bg-accent/20 text-accent border border-accent/50"
                         : "bg-surface2 text-faint border border-white/8"
@@ -270,15 +293,25 @@ export function WizardShell({ initialData, existingLeadId }: WizardShellProps) {
                     {i < currentStep ? "✓" : step.short}
                   </div>
                   <span
-                    className={`hidden lg:block text-[11px] truncate transition-colors mr-0.5
-                    ${i === currentStep ? "text-textc font-medium" : "text-faint"}`}
+                    className={`
+                      hidden lg:block text-[11px] truncate transition-colors mr-0.5
+                      ${i === currentStep ? "text-textc font-medium" : "text-faint"}
+                    `}
                   >
                     {step.label}
                   </span>
                   {i < STEPS.length - 1 && (
-                    <div className={`flex-1 h-px transition-colors duration-300 mx-0.5
-                      ${i < currentStep ? "bg-accent/40" : "bg-white/8"}`}
-                    />
+                    <motion.div
+                      className="flex-1 h-px mx-0.5 bg-white/8 relative overflow-hidden"
+                      style={{ minWidth: 4 }}
+                    >
+                      <motion.div
+                        className="absolute inset-y-0 left-0 bg-accent/50 rounded-full"
+                        initial={false}
+                        animate={{ width: i < currentStep ? "100%" : "0%" }}
+                        transition={{ duration: 0.35 }}
+                      />
+                    </motion.div>
                   )}
                 </div>
               ))}
@@ -323,7 +356,7 @@ export function WizardShell({ initialData, existingLeadId }: WizardShellProps) {
               >
                 <AlertTriangle size={15} className="text-danger shrink-0" />
                 <span className="text-sm text-textc flex-1">
-                  Supprimer ce brouillon ?
+                  Supprimer ce lead ?
                 </span>
                 <Button
                   variant="ghost"
@@ -361,14 +394,16 @@ export function WizardShell({ initialData, existingLeadId }: WizardShellProps) {
                   <span className="hidden sm:inline">Précédent</span>
                 </Button>
 
-                {/* Supprimer brouillon */}
-                <button
-                  onClick={() => setDeleteConfirm(true)}
-                  className="p-2 rounded-[10px] text-faint hover:text-danger hover:bg-danger/8 transition-all"
-                  title="Supprimer ce brouillon"
-                >
-                  <Trash2 size={15} />
-                </button>
+                {/* Supprimer — uniquement si le lead existe en DB */}
+                {existingLeadId && (
+                  <button
+                    onClick={() => setDeleteConfirm(true)}
+                    className="p-2 rounded-[10px] text-faint hover:text-danger hover:bg-danger/8 transition-all"
+                    title="Supprimer ce lead"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                )}
 
                 <div className="flex-1" />
 

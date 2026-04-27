@@ -1,9 +1,26 @@
 export const dynamic = "force-dynamic";
-import { use } from "react";
+import type { Metadata } from "next";
 import { redirect, notFound } from "next/navigation";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const { createServerClient } = await import("@/lib/supabase/server");
+  const supabase = await createServerClient();
+  const { data } = await supabase
+    .from("leads")
+    .select("client_name, client_company")
+    .eq("id", id)
+    .single();
+  const label = data?.client_name || data?.client_company || "Lead";
+  return { title: label };
+}
 import { createServerClient } from "@/lib/supabase/server";
 import { WizardShell } from "@/components/wizard/WizardShell";
-import type { Lead, WizardData } from "@/types";
+import type { Lead, WizardData, Profile } from "@/types";
 
 function leadToWizardData(lead: Lead): Partial<WizardData> {
   return {
@@ -36,18 +53,33 @@ export default async function RdvDetailPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
   if (!user) redirect("/login");
 
-  const { data: lead, error } = await supabase
-    .from("leads")
-    .select("*")
-    .eq("id", id)
+  // Vérifier le rôle pour savoir si admin peut voir tous les leads
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
     .single();
+
+  const isAdmin = (profile as Pick<Profile, "role"> | null)?.role === "admin";
+
+  // Récupérer le lead — les admins voient tout, les commerciaux seulement leurs leads
+  const baseQuery = supabase.from("leads").select("*").eq("id", id);
+  const { data: lead, error } = isAdmin
+    ? await baseQuery.single()
+    : await baseQuery.eq("commercial_id", user.id).single();
 
   if (error || !lead) notFound();
 
-  const wizardData = leadToWizardData(lead as Lead);
+  const typedLead = lead as unknown as Lead;
+  const wizardData = leadToWizardData(typedLead);
 
-  return <WizardShell initialData={wizardData} existingLeadId={id} />;
+  return (
+    <WizardShell
+      initialData={wizardData}
+      existingLeadId={id}
+      initialStatus={typedLead.status}
+    />
+  );
 }

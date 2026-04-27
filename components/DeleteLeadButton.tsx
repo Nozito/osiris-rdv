@@ -1,26 +1,51 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2, Check, X } from "lucide-react";
+import { Trash2, Check, X, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
+import { toast } from "@/components/ui/Toast";
 
-export function DeleteLeadButton({ leadId }: { leadId: string }) {
+interface Props {
+  leadId: string;
+  onDeleted?: () => void; // callback pour retirer la ligne du DOM sans refresh
+}
+
+export function DeleteLeadButton({ leadId, onDeleted }: Props) {
   const [step, setStep] = useState<"idle" | "confirm" | "loading">("idle");
-  const router = useRouter();
-  const supabase = createClient();
 
   const handleDelete = async () => {
     setStep("loading");
-    await supabase.from("leads").delete().eq("id", leadId).eq("status", "draft");
-    router.refresh();
+    const supabase = createClient();
+    const { error, count } = await supabase
+      .from("leads")
+      .delete({ count: "exact" })
+      .eq("id", leadId);
+
+    if (error) {
+      toast.error("Erreur lors de la suppression");
+      setStep("idle");
+      return;
+    }
+    if (count === 0) {
+      toast.error("Impossible de supprimer ce lead");
+      setStep("idle");
+      return;
+    }
+
+    toast.success("Brouillon supprimé");
+    onDeleted?.();
   };
 
   if (step === "idle") {
     return (
       <button
         onClick={(e) => { e.preventDefault(); setStep("confirm"); }}
-        className="p-1.5 rounded-lg text-faint hover:text-danger hover:bg-danger/8 transition-all opacity-0 group-hover:opacity-100"
+        className="
+          p-1.5 rounded-lg text-faint/40 hover:text-danger hover:bg-danger/8
+          transition-all duration-150
+          group-hover:text-faint
+          min-w-[28px] flex items-center justify-center
+        "
         title="Supprimer le brouillon"
       >
         <Trash2 size={14} />
@@ -30,11 +55,11 @@ export function DeleteLeadButton({ leadId }: { leadId: string }) {
 
   if (step === "confirm") {
     return (
-      <div className="flex items-center gap-1 shrink-0">
-        <span className="text-xs text-muted hidden sm:block">Supprimer ?</span>
+      <div className="flex items-center gap-1 shrink-0 animate-[fadeInUp_0.15s_ease-out]">
+        <span className="text-xs text-muted pr-1">Supprimer ?</span>
         <button
-          onClick={handleDelete}
-          className="p-1.5 rounded-lg text-danger hover:bg-danger/15 transition-all"
+          onClick={(e) => { e.preventDefault(); handleDelete(); }}
+          className="p-1.5 rounded-lg text-danger hover:bg-danger/15 transition-all font-medium"
           title="Confirmer"
         >
           <Check size={14} />
@@ -51,8 +76,8 @@ export function DeleteLeadButton({ leadId }: { leadId: string }) {
   }
 
   return (
-    <div className="p-1.5">
-      <Trash2 size={14} className="text-faint animate-pulse" />
+    <div className="p-1.5 min-w-[28px] flex items-center justify-center">
+      <Loader2 size={14} className="text-faint animate-spin" />
     </div>
   );
 }

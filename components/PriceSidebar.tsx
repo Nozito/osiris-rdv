@@ -44,7 +44,7 @@ export function PriceSidebar({ data }: PriceSidebarProps) {
     .forEach((t) => lineItems.push({ label: t.label, price: t.price }));
 
   return (
-    <aside className="w-72 shrink-0 hidden lg:flex flex-col gap-4 sticky top-6 self-start">
+    <aside className="w-72 shrink-0 hidden md:flex flex-col gap-4 sticky top-6 self-start">
       <div className="rounded-card bg-surface border border-white/8 overflow-hidden">
         <div className="px-5 py-4 border-b border-white/8 flex items-center gap-2">
           <Sparkles size={16} className="text-accent" />
@@ -153,7 +153,7 @@ export function MobilePriceBar({ data }: PriceSidebarProps) {
   if (oneTime === 0) return null;
 
   return (
-    <div className="lg:hidden fixed bottom-[52px] left-0 right-0 z-20 px-4">
+    <div className="md:hidden fixed bottom-[52px] left-0 right-0 z-20 px-4">
       <div className="rounded-[14px] bg-surface2/95 backdrop-blur border border-white/8 px-4 py-3 flex items-center justify-between shadow-lg">
         <div>
           <p className="text-xs text-muted">Estimation</p>
