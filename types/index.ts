@@ -1,6 +1,100 @@
 export type LeadStatus = "draft" | "sent" | "signed" | "lost";
 export type UserRole = "admin" | "commercial";
 
+// OSIRIS CRM — pricing configurator
+export interface LeadQuote {
+  // ── Pré-qualification (stocké pour le PDF et l'envoi)
+  clientCompany:     string;
+  clientIndustry:    string;
+  clientCompanySize: string;
+  clientCurrentSite: string;
+  clientSiteUrl:     string;
+  clientObjectives:  string[];
+  clientNeeds:       string;
+  clientBudgetRange: string;
+  clientOwnEstimate: number | null;
+  clientBudgetNotes: string;
+
+  // ── Configurateur
+  siteTypeId:        string;
+  siteTypeLabel:     string;
+  extraPages:        number;
+  selectedUpgrades:  string[];
+  selectedUniversal: string[];
+  wantsUnlimited:    boolean;
+  deadlineId:        string;
+  deadlineLabel:     string;
+
+  // ── Prix calculés via calcQuote() — jamais hardcodés
+  basePrice:         number;
+  extraPagesPrice:   number;
+  upgradesPrice:     number;
+  universalPrice:    number;
+  subtotalHT:        number;
+  deadlineSurcharge: number;
+  totalHT:           number;
+  tva:               number;
+  totalTTC:          number;
+}
+
+// OSIRIS CRM — pricing configurator: internal state for the full wizard (pre-qual + configurator + envoi)
+export interface ConfiguratorData {
+  // ── Contact client (collecté en pré-qual step 1)
+  clientId:          string | null;
+  clientFirstName:   string;
+  clientLastName:    string;
+  clientEmail:       string;
+  clientPhone:       string;
+  clientCompany:     string;
+
+  // ── Pré-qualification step 1 — Profil
+  clientIndustry:    string;
+  clientCompanySize: string;
+  clientCurrentSite: string;   // 'yes-recent' | 'yes-old' | 'no' | 'refonte'
+  clientSiteUrl:     string;   // URL du site actuel si existant
+
+  // ── Pré-qualification step 2 — Besoins
+  clientObjectives:  string[]; // multi-select
+  clientNeeds:       string;   // texte libre
+
+  // ── Pré-qualification step 3 — Budget client
+  clientBudgetRange: string;
+  clientOwnEstimate: number | null;
+  clientBudgetNotes: string;
+
+  // ── Configurateur (steps 4–9, INCHANGÉS)
+  siteTypeId:        string;
+  extraPages:        number;
+  selectedUpgrades:  string[];
+  selectedUniversal: string[];
+  wantsUnlimited:    boolean;
+  deadlineId:        string;
+}
+
+export const CONFIGURATOR_INITIAL_DATA: ConfiguratorData = {
+  clientId:          null,
+  clientFirstName:   "",
+  clientLastName:    "",
+  clientEmail:       "",
+  clientPhone:       "",
+  clientCompany:     "",
+  clientIndustry:    "",
+  clientCompanySize: "",
+  clientCurrentSite: "",
+  clientSiteUrl:     "",
+  clientObjectives:  [],
+  clientNeeds:       "",
+  clientBudgetRange: "",
+  clientOwnEstimate: null,
+  clientBudgetNotes: "",
+  siteTypeId:        "",
+  extraPages:        0,
+  selectedUpgrades:  [],
+  selectedUniversal: [],
+  wantsUnlimited:    false,
+  deadlineId:        "standard",
+};
+
 /** Utilisateur de l'application (table `profiles`) */
 export interface Profile {
   id: string;
@@ -58,6 +152,9 @@ export interface Lead {
 
   notes: string;
   recommendation: RecommendedOffer | null;
+
+  // OSIRIS CRM — pricing configurator
+  quote_data: LeadQuote | null;
 }
 
 export interface WizardData {

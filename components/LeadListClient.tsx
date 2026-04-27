@@ -223,10 +223,12 @@ export function LeadListClient({ initialLeads }: Props) {
                   </p>
                 </div>
 
-                {/* Prix + date */}
+                {/* Prix + date — OSIRIS CRM — pricing configurator */}
                 <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                   <span className="text-sm font-semibold text-textc hidden sm:block">
-                    {formatPrice(lead.adjusted_price ?? lead.total_one_time)}
+                    {lead.quote_data
+                      ? lead.quote_data.totalTTC.toLocaleString("fr-FR") + " €"
+                      : formatPrice(lead.adjusted_price ?? lead.total_one_time)}
                   </span>
                   <span className="text-xs text-faint hidden md:block whitespace-nowrap">
                     {timeAgo(lead.updated_at ?? lead.created_at)}

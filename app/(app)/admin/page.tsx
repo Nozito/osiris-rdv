@@ -15,6 +15,7 @@ import {
   DollarSign,
   TrendingUp,
   FileText,
+  BarChart2,
 } from "lucide-react";
 
 export default async function AdminPage() {
@@ -55,14 +56,18 @@ export default async function AdminPage() {
     {} as Record<string, typeof allLeads>
   );
 
-  const totalRevenue = allLeads
-    .filter((l) => l.status === "signed")
-    .reduce((s, l) => s + (l.adjusted_price ?? l.total_one_time), 0);
+  // OSIRIS CRM — pricing configurator: prefer quote_data.totalTTC for all revenue KPIs
+  const dealValue = (l: Lead) =>
+    l.quote_data?.totalTTC ?? l.adjusted_price ?? l.total_one_time;
+
+  const signedLeads = allLeads.filter((l) => l.status === "signed");
+  const totalRevenue = signedLeads.reduce((s, l) => s + dealValue(l), 0);
+  const avgDealSize  = allLeads.length
+    ? Math.round(allLeads.reduce((s, l) => s + dealValue(l), 0) / allLeads.length)
+    : 0;
 
   const conversionRate = allLeads.length
-    ? Math.round(
-        (allLeads.filter((l) => l.status === "signed").length / allLeads.length) * 100
-      )
+    ? Math.round((signedLeads.length / allLeads.length) * 100)
     : 0;
 
   const statuses = ["draft", "sent", "signed", "lost"] as const;
@@ -79,12 +84,16 @@ export default async function AdminPage() {
           ]}
         />
 
-        {/* OSIRIS UX — animated KPI cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <KpiCard label="Total leads"       value={allLeads.length}                              icon={<Users size={18} />}       format="number" />
-          <KpiCard label="Signés"            value={allLeads.filter((l) => l.status === "signed").length} icon={<TrendingUp size={18} />}  format="number" />
-          <KpiCard label="Taux de signature" value={conversionRate}                               icon={<TrendingUp size={18} />}  format="percent" />
-          <KpiCard label="CA total signé"    value={totalRevenue}                                 icon={<DollarSign size={18} />}  format="price"  glint />
+        {/* OSIRIS UX — animated KPI cards — OSIRIS CRM — pricing configurator */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-3">
+          <KpiCard label="Total leads"       value={allLeads.length}    icon={<Users size={18} />}      format="number" />
+          <KpiCard label="Signés"            value={signedLeads.length} icon={<TrendingUp size={18} />} format="number" />
+          <KpiCard label="Taux de signature" value={conversionRate}     icon={<TrendingUp size={18} />} format="percent" />
+          <KpiCard label="CA total signé"    value={totalRevenue}       icon={<DollarSign size={18} />} format="price"  glint />
+        </div>
+        {/* OSIRIS CRM — pricing configurator: average deal size across all leads */}
+        <div className="grid grid-cols-1 mb-6">
+          <KpiCard label="Panier moyen (tous leads)" value={avgDealSize} icon={<BarChart2 size={18} />} format="price" />
         </div>
 
         {/* Répartition par statut */}
@@ -141,8 +150,11 @@ export default async function AdminPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-4">
+                    {/* OSIRIS CRM — pricing configurator */}
                     <span className="text-sm font-semibold text-textc hidden sm:block">
-                      {formatPrice(lead.adjusted_price ?? lead.total_one_time)}
+                      {lead.quote_data
+                        ? lead.quote_data.totalTTC.toLocaleString("fr-FR") + " €"
+                        : formatPrice(lead.adjusted_price ?? lead.total_one_time)}
                     </span>
                     <StatusBadge status={lead.status} />
                     <span className="text-xs text-faint hidden md:block">

@@ -25,12 +25,16 @@ export default async function DashboardPage() {
 
   const allLeads = (leads ?? []) as Lead[];
 
+  // OSIRIS CRM — pricing configurator: prefer quote_data.totalTTC for revenue KPI
+  const dealValue = (l: Lead) =>
+    l.quote_data?.totalTTC ?? l.adjusted_price ?? l.total_one_time;
+
   const stats = {
     total:   allLeads.length,
     signed:  allLeads.filter((l) => l.status === "signed").length,
     revenue: allLeads
       .filter((l) => l.status === "signed")
-      .reduce((s, l) => s + (l.adjusted_price ?? l.total_one_time), 0),
+      .reduce((s, l) => s + dealValue(l), 0),
     pending: allLeads.filter((l) => l.status === "sent").length,
   };
 

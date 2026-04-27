@@ -3,8 +3,9 @@ import type { Metadata } from "next";
 export const metadata: Metadata = { title: "Nouveau RDV" };
 
 import { createServerClient } from "@/lib/supabase/server";
-import { WizardShell } from "@/components/wizard/WizardShell";
-import type { WizardData } from "@/types";
+// OSIRIS CRM — pricing configurator
+import { ConfiguratorShell } from "@/components/wizard/ConfiguratorShell";
+import type { ConfiguratorData } from "@/types";
 
 export default async function NouveauRdvPage({
   searchParams,
@@ -13,8 +14,9 @@ export default async function NouveauRdvPage({
 }) {
   const { clientId } = await searchParams;
 
-  let initialData: Partial<WizardData> = {};
+  let initialData: Partial<ConfiguratorData> = {};
 
+  // OSIRIS CRM — pricing configurator: pre-fill client info if coming from client page
   if (clientId) {
     const supabase = await createServerClient();
     const { data: client } = await supabase
@@ -24,15 +26,16 @@ export default async function NouveauRdvPage({
       .single();
 
     if (client) {
+      const parts = (client.name as string).split(" ");
       initialData = {
-        clientId: client.id,
-        clientName: client.name,
-        clientEmail: client.email,
-        clientCompany: client.company,
-        clientPhone: client.phone,
+        clientId:        client.id,
+        clientFirstName: parts[0] ?? "",
+        clientLastName:  parts.slice(1).join(" "),
+        clientEmail:     client.email,
+        clientPhone:     client.phone,
       };
     }
   }
 
-  return <WizardShell initialData={initialData} />;
+  return <ConfiguratorShell initialData={initialData} />;
 }
