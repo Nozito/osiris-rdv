@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, useMotionTemplate, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { Check, ArrowRight, HelpCircle, ChevronLeft, ChevronRight, Rocket, Zap, Crown, Calculator, Sparkles, FileText, Clock, ClipboardList, Target, Layers } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { Footer } from '../components/Footer';
-import { SEOHead } from '../components/SEOHead';
+import Link from 'next/link';
+import { Footer } from './Footer';
+import { SEOHead } from './SEOHead';
 import { useLanguage } from '../context/LanguageContext';
 import jsPDF from 'jspdf';
 
@@ -1188,7 +1188,7 @@ export const PricingPage: React.FC = () => {
                         transition={{ duration: 0.8 }}
                         className="text-center mb-12 md:mb-16"
                     >
-                        <Link to="/" className="inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors mb-8 text-xs font-mono uppercase tracking-widest group">
+                        <Link href="/" className="inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors mb-8 text-xs font-mono uppercase tracking-widest group">
                             <span className="transform group-hover:-translate-x-1 transition-transform inline-block">
                                 <ArrowRight className="w-3.5 h-3.5 rotate-180" />
                             </span>
@@ -1384,7 +1384,7 @@ export const PricingPage: React.FC = () => {
                                 {t.pricingPage.faq.subtitle} <br />
                                 {t.pricingPage.faq.subtitleLine2}
                             </p>
-                            <Link to="/contact" className="text-white underline decoration-premium-green decoration-2 underline-offset-4 font-bold hover:text-premium-green transition-colors">
+                            <Link href="/contact" className="text-white underline decoration-premium-green decoration-2 underline-offset-4 font-bold hover:text-premium-green transition-colors">
                                 {t.pricingPage.faq.contactSupport}
                             </Link>
                         </div>
