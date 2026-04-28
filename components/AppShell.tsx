@@ -2,9 +2,7 @@
 // OSIRIS UX — global app shell: keyboard shortcuts, command palette, FAB, scroll-to-top
 
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import Link from "next/link";
-import { Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { CommandPalette } from "@/components/ui/CommandPalette";
 import { ScrollToTop } from "@/components/ui/ScrollToTop";
 
@@ -21,7 +19,6 @@ function isTyping(e: KeyboardEvent): boolean {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const router = useRouter();
-  const pathname = usePathname();
 
   // OSIRIS UX — global keyboard shortcuts
   useEffect(() => {
@@ -65,10 +62,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => document.removeEventListener("keydown", handler);
   }, [router]);
 
-  // OSIRIS UX — FAB visible on non-wizard pages only
-  const isWizard =
-    pathname.startsWith("/rdv/") || pathname === "/rdv/nouveau";
-
   return (
     <>
       {children}
@@ -79,26 +72,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         onClose={() => setPaletteOpen(false)}
       />
 
-      {/* OSIRIS UX — scroll to top (bottom-left) */}
+      {/* OSIRIS UX — scroll to top (bottom-left, desktop only) */}
       <ScrollToTop />
-
-      {/* OSIRIS UX — FAB: Nouveau RDV (mobile only, non-wizard pages) */}
-      {!isWizard && (
-        <Link
-          href="/rdv/nouveau"
-          aria-label="Nouveau RDV"
-          className="
-            md:hidden fixed bottom-6 right-5 z-40
-            w-14 h-14 rounded-full
-            bg-accent hover:bg-accent-hover active:scale-95
-            shadow-lg shadow-accent/30
-            flex items-center justify-center text-white
-            transition-all duration-200
-          "
-        >
-          <Plus size={24} />
-        </Link>
-      )}
     </>
   );
 }

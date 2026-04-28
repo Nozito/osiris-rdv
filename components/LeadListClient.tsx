@@ -223,9 +223,9 @@ export function LeadListClient({ initialLeads }: Props) {
                   </p>
                 </div>
 
-                {/* Prix + date — OSIRIS CRM — pricing configurator */}
+                {/* Prix + date */}
                 <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                  <span className="text-sm font-semibold text-textc hidden sm:block">
+                  <span className={`text-xs sm:text-sm font-semibold ${lead.status === "signed" ? "text-success" : lead.status === "lost" ? "text-faint line-through" : "text-textc"}`}>
                     {lead.quote_data
                       ? lead.quote_data.totalTTC.toLocaleString("fr-FR") + " €"
                       : formatPrice(lead.adjusted_price ?? lead.total_one_time)}

@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 import { KpiCard } from "@/components/ui/KpiCard";
 import { LeadListClient } from "@/components/LeadListClient";
+import { LeadPipeline } from "@/components/LeadPipeline";
 import type { Lead } from "@/types";
 import { TrendingUp, Users, DollarSign, Clock } from "lucide-react";
 
@@ -29,13 +30,21 @@ export default async function DashboardPage() {
   const dealValue = (l: Lead) =>
     l.quote_data?.totalTTC ?? l.adjusted_price ?? l.total_one_time;
 
+  const byStatus = (status: string) => allLeads.filter((l) => l.status === status);
+  const sumValue  = (arr: Lead[]) => arr.reduce((s, l) => s + dealValue(l), 0);
+
   const stats = {
     total:   allLeads.length,
-    signed:  allLeads.filter((l) => l.status === "signed").length,
-    revenue: allLeads
-      .filter((l) => l.status === "signed")
-      .reduce((s, l) => s + dealValue(l), 0),
-    pending: allLeads.filter((l) => l.status === "sent").length,
+    signed:  byStatus("signed").length,
+    revenue: sumValue(byStatus("signed")),
+    pending: byStatus("sent").length,
+  };
+
+  const pipeline = {
+    draft:  { count: byStatus("draft").length,  value: sumValue(byStatus("draft"))  },
+    sent:   { count: byStatus("sent").length,   value: sumValue(byStatus("sent"))   },
+    signed: { count: byStatus("signed").length, value: sumValue(byStatus("signed")) },
+    lost:   { count: byStatus("lost").length,   value: sumValue(byStatus("lost"))   },
   };
 
   return (
@@ -49,7 +58,10 @@ export default async function DashboardPage() {
           <KpiCard label="CA signé"    value={stats.revenue}  icon={<DollarSign size={16} />}  format="price" glint />
         </div>
 
-        {/* OSIRIS UX — liste avec search, filtres statut, changement rapide */}
+        {/* Pipeline funnel */}
+        <LeadPipeline {...pipeline} />
+
+        {/* Liste leads avec search, filtres statut, changement rapide */}
         <LeadListClient initialLeads={allLeads} />
       </main>
     </div>
