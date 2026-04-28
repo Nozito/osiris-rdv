@@ -75,7 +75,7 @@ export function LeadListClient({ initialLeads }: Props) {
     );
 
   return (
-    <div className="rounded-card bg-surface border border-white/8 overflow-hidden">
+    <div className="rounded-card bg-surface border border-white/8">
       {/* Header + search */}
       <div className="px-4 sm:px-5 py-4 border-b border-white/8 flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="flex items-center justify-between sm:justify-start gap-3 flex-1">

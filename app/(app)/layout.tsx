@@ -29,7 +29,10 @@ export default async function AppLayout({
   return (
     <AppShell>
       <NavbarWrapper isAdmin={isAdmin} userEmail={user.email ?? ""} />
-      {children}
+      {/* pb-[4.5rem] sur mobile pour ne pas chevaucher la BottomNav */}
+      <div className="pb-[4.5rem] sm:pb-0">
+        {children}
+      </div>
     </AppShell>
   );
 }

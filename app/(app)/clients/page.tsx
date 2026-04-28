@@ -18,6 +18,7 @@ import {
   FileText,
   Users,
 } from "lucide-react";
+import { NewClientModal } from "@/components/NewClientModal";
 
 type LeadMini = {
   id: string;
@@ -94,15 +95,18 @@ export default async function ClientsPage() {
   return (
     <div className="min-h-screen">
       <main className="max-w-6xl mx-auto px-4 py-5">
-        {/* OSIRIS UX — breadcrumb */}
-        <Breadcrumb
-          items={[
-            { label: "OSIRIS", href: "/dashboard" },
-            { label: "Clients" },
-          ]}
-        />
+        {/* Titre + actions */}
+        <div className="flex items-center justify-between mb-4">
+          <Breadcrumb
+            items={[
+              { label: "OSIRIS", href: "/dashboard" },
+              { label: "Clients" },
+            ]}
+          />
+          <NewClientModal />
+        </div>
 
-        {/* OSIRIS UX — animated KPI cards */}
+        {/* KPI cards */}
         <div className="grid grid-cols-3 gap-3 mb-5">
           <KpiCard label="Clients"      value={totalClients} icon={<Users size={16} />}      format="number" />
           <KpiCard label="Leads total"  value={totalLeads}   icon={<FileText size={16} />}   format="number" />

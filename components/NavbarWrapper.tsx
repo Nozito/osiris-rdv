@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { DashboardHeader } from "@/components/DashboardHeader";
+import { BottomNav } from "@/components/BottomNav";
 
 interface Props {
   isAdmin: boolean;
@@ -10,7 +11,12 @@ interface Props {
 
 export function NavbarWrapper({ isAdmin, userEmail }: Props) {
   const pathname = usePathname();
-  // Le wizard (/rdv/*) a son propre header — on masque la navbar globale
-  if (pathname.startsWith("/rdv/")) return null;
-  return <DashboardHeader isAdmin={isAdmin} userEmail={userEmail} />;
+  const isWizard = pathname.startsWith("/rdv/");
+  if (isWizard) return null;
+  return (
+    <>
+      <DashboardHeader isAdmin={isAdmin} userEmail={userEmail} />
+      <BottomNav isAdmin={isAdmin} userEmail={userEmail} />
+    </>
+  );
 }

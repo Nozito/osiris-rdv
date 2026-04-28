@@ -1,4 +1,4 @@
-// OSIRIS CRM — pricing configurator: génération PDF devis complet
+// OSIRIS CRM — génération devis PDF format classique professionnel
 import jsPDF from "jspdf";
 import type { ConfiguratorData, LeadQuote } from "@/types";
 import {
@@ -9,242 +9,352 @@ import {
   DEADLINES,
 } from "@/lib/configurator-pricing";
 
-// ── Palette (identique à pdfCommercial.ts pour cohérence DA)
+// ── Palette neutre (fond blanc, texte sombre)
 type RGB = [number, number, number];
-const DARK:    RGB = [8,   8,  16];
-const SURFACE: RGB = [15,  15, 26];
-const ACCENT:  RGB = [37,  99, 235];
-const TEXT:    RGB = [248, 250, 252];
-const MUTED:   RGB = [148, 163, 184];
-const LINE:    RGB = [30,  30, 50];
+const WHITE:    RGB = [255, 255, 255];
+const NEAR_BLK: RGB = [15,  23,  42];   // slate-900
+const SLATE:    RGB = [71,  85, 105];   // slate-600
+const SLATE_LT: RGB = [148, 163, 184];  // slate-400
+const LIGHT:    RGB = [241, 245, 249];  // slate-100
+const LIGHTER:  RGB = [248, 250, 252];  // slate-50
+const BLUE:     RGB = [37,  99, 235];   // accent
+const BLUE_LT:  RGB = [219, 234, 254];  // blue-100
+const GREEN:    RGB = [21, 128,  61];   // green-700
+const LINE:     RGB = [226, 232, 240];  // slate-200
 
-const c    = (doc: jsPDF, rgb: RGB) => doc.setTextColor(rgb[0], rgb[1], rgb[2]);
-const fill = (doc: jsPDF, rgb: RGB) => {
-  doc.setFillColor(rgb[0], rgb[1], rgb[2]);
+function c(doc: jsPDF, rgb: RGB)    { doc.setTextColor(rgb[0], rgb[1], rgb[2]); }
+function bg(doc: jsPDF, rgb: RGB)   { doc.setFillColor(rgb[0], rgb[1], rgb[2]); doc.setDrawColor(rgb[0], rgb[1], rgb[2]); }
+function hline(doc: jsPDF, x: number, y: number, w: number, rgb: RGB, lw = 0.25) {
   doc.setDrawColor(rgb[0], rgb[1], rgb[2]);
-};
-const rect = (doc: jsPDF, x: number, y: number, w: number, h: number, rgb: RGB) => {
-  fill(doc, rgb); doc.rect(x, y, w, h, "F");
-};
-const hrule = (doc: jsPDF, y: number) => {
-  fill(doc, LINE); doc.rect(20, y, 170, 0.3, "F");
-};
-
-function section(doc: jsPDF, text: string, y: number) {
-  doc.setFontSize(7);
-  doc.setFont("helvetica", "bold");
-  c(doc, ACCENT);
-  doc.text(text.toUpperCase(), 20, y);
+  doc.setLineWidth(lw);
+  doc.line(x, y, x + w, y);
 }
 
-function row(doc: jsPDF, label: string, value: string, y: number, bold = false) {
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
-  c(doc, MUTED);
-  doc.text(label, 20, y);
-  doc.setFont("helvetica", bold ? "bold" : "normal");
-  c(doc, TEXT);
-  doc.text(value, 100, y);
+function fmt(n: number): string {
+  return n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 }
-
-function priceRow(doc: jsPDF, label: string, price: string, y: number, accent = false) {
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
-  c(doc, MUTED);
-  doc.text(label, 24, y);
-  doc.setFont("helvetica", accent ? "bold" : "normal");
-  c(doc, accent ? ACCENT : TEXT);
-  doc.text(price, 175, y, { align: "right" });
-}
-
-function fmt(n: number) {
-  return n.toLocaleString("fr-FR") + " €";
-}
-
-const OBJECTIVE_LABELS: Record<string, string> = {
-  leads:    "Générer des leads",
-  sell:     "Vendre en ligne",
-  showcase: "Présenter services / portfolio",
-  cred:     "Renforcer la crédibilité",
-  seo:      "Améliorer le SEO",
-  replace:  "Remplacer l'ancien site",
-  notif:    "Informer / fidéliser",
-  other:    "Autre",
-};
-
-const BUDGET_LABELS: Record<string, string> = {
-  "under-1k": "Moins de 1 000 €",
-  "1k-2k":    "1 000 – 2 000 €",
-  "2k-5k":    "2 000 – 5 000 €",
-  "5k-10k":   "5 000 – 10 000 €",
-  "10k-plus": "Plus de 10 000 €",
-  "flexible": "Budget flexible",
-};
 
 export function generateQuotePdf(data: ConfiguratorData, quote: LeadQuote): string {
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  const W = 210;
+  const doc  = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const W    = 210;
+  const ML   = 18;   // margin left
+  const MR   = 18;   // margin right
+  const CW   = W - ML - MR; // content width
 
-  // ── Fond total
-  rect(doc, 0, 0, W, 297, DARK);
+  // Fond blanc
+  bg(doc, WHITE);
+  doc.rect(0, 0, W, 297, "F");
 
-  // ── Header
-  rect(doc, 0, 0, W, 42, SURFACE);
-  rect(doc, 0, 0, 4, 42, ACCENT);
+  const ref     = `DEV-${Date.now().toString(36).toUpperCase().slice(-6)}`;
+  const dateStr = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  const siteType = SITE_TYPES.find((s) => s.id === data.siteTypeId);
+  const deadline = DEADLINES.find((d) => d.id === data.deadlineId);
+  const allUpgOpts = [...UPGRADE_BUSINESS_OPTIONS, ...UPGRADE_EMPIRE_OPTIONS];
 
+  // ══════════════════════════════════════════════════════════
+  // HEADER — bande bleue en haut
+  // ══════════════════════════════════════════════════════════
+  bg(doc, BLUE);
+  doc.rect(0, 0, W, 28, "F");
+
+  // OSIRIS (blanc)
   doc.setFontSize(22);
   doc.setFont("helvetica", "bold");
-  c(doc, TEXT);
-  doc.text("OSIRIS", 14, 16);
+  c(doc, WHITE);
+  doc.text("OSIRIS", ML, 14);
+
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  c(doc, BLUE_LT);
+  doc.text("Agence Web Premium", ML, 20);
+
+  // "DEVIS" à droite (blanc)
+  doc.setFontSize(22);
+  doc.setFont("helvetica", "bold");
+  c(doc, WHITE);
+  doc.text("DEVIS", W - MR, 14, { align: "right" });
+
+  doc.setFontSize(7.5);
+  doc.setFont("helvetica", "normal");
+  c(doc, BLUE_LT);
+  doc.text(`N° ${ref}`, W - MR, 20, { align: "right" });
+
+  // ══════════════════════════════════════════════════════════
+  // INFOS — émetteur (gauche) + destinataire (droite)
+  // ══════════════════════════════════════════════════════════
+  let y = 38;
+
+  // Émetteur
+  doc.setFontSize(7);
+  doc.setFont("helvetica", "bold");
+  c(doc, BLUE);
+  doc.text("ÉMETTEUR", ML, y); y += 4.5;
+
+  doc.setFontSize(8.5);
+  doc.setFont("helvetica", "normal");
+  c(doc, NEAR_BLK);
+  doc.text("OSIRIS — Agence Web Premium", ML, y); y += 4.5;
+  c(doc, SLATE);
+  doc.setFontSize(8);
+  doc.text("contact@osiris-web.com", ML, y); y += 4;
+  doc.text("osiris-web.com", ML, y);
+
+  // Destinataire
+  const clientName = [data.clientFirstName, data.clientLastName].filter(Boolean).join(" ") || "—";
+  let dy = 38;
+  const midX = ML + CW / 2 + 6;
+
+  doc.setFontSize(7);
+  doc.setFont("helvetica", "bold");
+  c(doc, BLUE);
+  doc.text("DESTINATAIRE", midX, dy); dy += 4.5;
 
   doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
-  c(doc, MUTED);
-  doc.text("Proposition commerciale", 14, 23);
-
-  const dateStr = new Date().toLocaleDateString("fr-FR", {
-    day: "numeric", month: "long", year: "numeric",
-  });
-  doc.setFontSize(8);
-  doc.text(dateStr, 14, 30);
-
-  // Ref en haut à droite
-  const ref = `REF-${Date.now().toString(36).toUpperCase().slice(-6)}`;
-  doc.setFontSize(8);
-  c(doc, ACCENT);
   doc.setFont("helvetica", "bold");
-  doc.text(ref, W - 20, 16, { align: "right" });
-  doc.setFontSize(7);
+  c(doc, NEAR_BLK);
+  doc.text(clientName, midX, dy); dy += 4.5;
+
+  doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
-  c(doc, MUTED);
-  doc.text("N° de référence", W - 20, 22, { align: "right" });
+  c(doc, SLATE);
+  if (data.clientCompany) { doc.text(data.clientCompany, midX, dy); dy += 4; }
+  if (data.clientEmail)   { doc.text(data.clientEmail,   midX, dy); dy += 4; }
+  if (data.clientPhone)   { doc.text(data.clientPhone,   midX, dy); dy += 4; }
 
-  let y = 54;
+  // Ligne de séparation
+  y = 70;
+  hline(doc, ML, y, CW, LINE, 0.4);
 
-  // ── Section client
-  section(doc, "Informations client", y); y += 7;
-  const name = [data.clientFirstName, data.clientLastName].filter(Boolean).join(" ") || "—";
-  row(doc, "Nom",        name,                           y); y += 6;
-  row(doc, "Entreprise", data.clientCompany  || "—",     y); y += 6;
-  row(doc, "Email",      data.clientEmail    || "—",     y); y += 6;
-  row(doc, "Téléphone",  data.clientPhone    || "—",     y); y += 6;
-  row(doc, "Secteur",    data.clientIndustry || "—",     y); y += 6;
-  if (data.clientCurrentSite && data.clientCurrentSite !== "no") {
-    const siteLabels: Record<string, string> = {
-      "yes-recent": "Oui — récent",
-      "yes-old":    "Oui — obsolète",
-      "refonte":    "En cours de refonte",
-    };
-    row(doc, "Site actuel", siteLabels[data.clientCurrentSite] ?? data.clientCurrentSite, y); y += 6;
-    if (data.clientSiteUrl) {
-      row(doc, "URL actuelle", data.clientSiteUrl, y); y += 6;
-    }
+  // Meta : date + validité (à droite du milieu)
+  y += 5;
+  doc.setFontSize(7.5);
+  doc.setFont("helvetica", "normal");
+  c(doc, SLATE);
+  doc.text(`Date d'émission : ${dateStr}`, midX, y);
+  doc.text("Validité : 30 jours", W - MR, y, { align: "right" });
+
+  // ══════════════════════════════════════════════════════════
+  // OBJET
+  // ══════════════════════════════════════════════════════════
+  y += 8;
+  bg(doc, LIGHTER);
+  doc.rect(ML, y - 3, CW, 9, "F");
+  doc.setFontSize(8.5);
+  doc.setFont("helvetica", "bold");
+  c(doc, NEAR_BLK);
+  doc.text(
+    `Objet : Création ${siteType?.label ?? "de site web"} — Proposition commerciale personnalisée`,
+    ML + 3, y + 3
+  );
+
+  // ══════════════════════════════════════════════════════════
+  // TABLEAU DES PRESTATIONS
+  // ══════════════════════════════════════════════════════════
+  y += 14;
+
+  // En-tête colonnes
+  const COL = {
+    desc: ML + 3,
+    qty:  ML + CW * 0.58,
+    pu:   ML + CW * 0.74,
+    tot:  W - MR - 2,
+  };
+
+  bg(doc, NEAR_BLK);
+  doc.rect(ML, y, CW, 7.5, "F");
+  doc.setFontSize(7.5);
+  doc.setFont("helvetica", "bold");
+  c(doc, WHITE);
+  doc.text("DÉSIGNATION",  COL.desc, y + 5);
+  doc.text("QTÉ",          COL.qty,  y + 5, { align: "center" });
+  doc.text("P.U. HT",      COL.pu,   y + 5, { align: "center" });
+  doc.text("TOTAL HT",     COL.tot,  y + 5, { align: "right" });
+  y += 7.5;
+
+  // Lignes
+  type LineItem = { label: string; qty: number; pu: number; total: number };
+  const items: LineItem[] = [];
+
+  items.push({ label: siteType?.label ?? data.siteTypeId, qty: 1, pu: quote.basePrice, total: quote.basePrice });
+
+  if (quote.extraPagesPrice > 0 && data.extraPages > 0) {
+    const pprice = Math.round(quote.extraPagesPrice / data.extraPages);
+    items.push({ label: "Pages supplémentaires", qty: data.extraPages, pu: pprice, total: quote.extraPagesPrice });
   }
-  y += 4; hrule(doc, y); y += 6;
 
-  // ── Besoins
-  section(doc, "Besoins & objectifs", y); y += 7;
-  if (data.clientObjectives.length > 0) {
-    doc.setFontSize(8);
-    c(doc, MUTED);
-    doc.text("Objectifs :", 20, y); y += 5;
-    data.clientObjectives.forEach((id) => {
-      c(doc, TEXT);
-      doc.setFontSize(8);
-      doc.text(`  • ${OBJECTIVE_LABELS[id] ?? id}`, 24, y); y += 5;
-    });
-  }
-  if (data.clientNeeds) {
-    doc.setFontSize(8);
-    c(doc, MUTED);
-    doc.text("Contexte :", 20, y); y += 5;
-    c(doc, TEXT);
-    const lines = doc.splitTextToSize(data.clientNeeds, 165);
-    doc.text(lines, 24, y); y += lines.length * 5;
-  }
-  y += 4; hrule(doc, y); y += 6;
-
-  // ── Budget client
-  section(doc, "Budget client déclaré", y); y += 7;
-  const budgetLabel = (BUDGET_LABELS[data.clientBudgetRange] ?? data.clientBudgetRange) || "—";
-  row(doc, "Budget annoncé", budgetLabel, y); y += 6;
-  if (data.clientOwnEstimate !== null) {
-    row(doc, "Son estimation", fmt(data.clientOwnEstimate), y); y += 6;
-  }
-  if (data.clientBudgetNotes) {
-    doc.setFontSize(8);
-    c(doc, MUTED);
-    doc.text("Notes :", 20, y); y += 5;
-    c(doc, TEXT);
-    const lines = doc.splitTextToSize(data.clientBudgetNotes, 165);
-    doc.text(lines, 24, y); y += lines.length * 5;
-  }
-  y += 4; hrule(doc, y); y += 6;
-
-  // ── Proposition Osiris
-  section(doc, "Notre proposition", y); y += 7;
-
-  const allUpgOpts = [...UPGRADE_BUSINESS_OPTIONS, ...UPGRADE_EMPIRE_OPTIONS];
-  const siteType   = SITE_TYPES.find((s) => s.id === data.siteTypeId);
-  const deadline   = DEADLINES.find((d) => d.id === data.deadlineId);
-
-  priceRow(doc, siteType?.label ?? data.siteTypeId, fmt(quote.basePrice), y); y += 6;
-
-  if (quote.extraPagesPrice > 0) {
-    priceRow(doc, `Pages supplémentaires (×${data.extraPages})`, "+" + fmt(quote.extraPagesPrice), y); y += 6;
-  }
   data.selectedUpgrades.forEach((id) => {
     const opt = allUpgOpts.find((o) => o.id === id);
-    if (opt) { priceRow(doc, opt.label, "+" + fmt(opt.price), y); y += 6; }
-  });
-  data.selectedUniversal.forEach((id) => {
-    const opt = UNIVERSAL_OPTIONS.find((o) => o.id === id);
-    if (opt) { priceRow(doc, opt.label, "+" + fmt(opt.price), y); y += 6; }
+    if (opt) items.push({ label: opt.label, qty: 1, pu: opt.price, total: opt.price });
   });
 
-  y += 2; hrule(doc, y); y += 5;
-  priceRow(doc, "Sous-total HT", fmt(quote.subtotalHT), y); y += 6;
+  data.selectedUniversal.forEach((id) => {
+    const opt = UNIVERSAL_OPTIONS.find((o) => o.id === id);
+    if (opt) items.push({ label: opt.label, qty: 1, pu: opt.price, total: opt.price });
+  });
+
+  const ROW_H = 8;
+
+  items.forEach((item, i) => {
+    // Alterner les fonds
+    if (i % 2 === 0) {
+      bg(doc, LIGHTER);
+      doc.rect(ML, y, CW, ROW_H, "F");
+    }
+
+    hline(doc, ML, y + ROW_H, CW, LINE);
+
+    doc.setFontSize(8.5);
+    doc.setFont("helvetica", "normal");
+    c(doc, NEAR_BLK);
+    doc.text(item.label, COL.desc, y + 5.3);
+
+    c(doc, SLATE);
+    doc.text(String(item.qty), COL.qty, y + 5.3, { align: "center" });
+    doc.text(fmt(item.pu),     COL.pu,  y + 5.3, { align: "center" });
+
+    doc.setFont("helvetica", "bold");
+    c(doc, NEAR_BLK);
+    doc.text(fmt(item.total), COL.tot, y + 5.3, { align: "right" });
+
+    y += ROW_H;
+  });
+
+  // Ligne "Modifications illimitées" en option (ambre)
+  if (data.wantsUnlimited) {
+    bg(doc, [255, 251, 235]); // amber-50
+    doc.rect(ML, y, CW, ROW_H, "F");
+    hline(doc, ML, y + ROW_H, CW, [253, 230, 138]);
+
+    doc.setFontSize(8.5);
+    doc.setFont("helvetica", "normal");
+    c(doc, [146, 64, 14]);
+    doc.text("Modifications illimitées (abonnement mensuel)", COL.desc, y + 5.3);
+    doc.text("1",             COL.qty, y + 5.3, { align: "center" });
+    doc.text("19,90 €/mois",  COL.pu,  y + 5.3, { align: "center" });
+    doc.setFont("helvetica", "bold");
+    doc.text("+ 19,90 €/mois", COL.tot, y + 5.3, { align: "right" });
+    y += ROW_H;
+  }
+
+  y += 5;
+
+  // ══════════════════════════════════════════════════════════
+  // TOTAUX (alignés à droite)
+  // ══════════════════════════════════════════════════════════
+  const TOT_W = 88;
+  const totX  = W - MR - TOT_W;
+
+  const totRow = (
+    label: string,
+    val: string,
+    opts: { bold?: boolean; accent?: boolean; big?: boolean } = {}
+  ) => {
+    const h = opts.big ? 10 : 7;
+    if (opts.accent) {
+      bg(doc, BLUE);
+      doc.rect(totX - 4, y, TOT_W + 4, h, "F");
+    } else if (opts.bold) {
+      bg(doc, LIGHT);
+      doc.rect(totX - 4, y, TOT_W + 4, h, "F");
+    }
+
+    const textY = y + (opts.big ? 7 : 5);
+    doc.setFontSize(opts.big ? 10 : 8.5);
+    doc.setFont("helvetica", opts.bold || opts.accent ? "bold" : "normal");
+    c(doc, opts.accent ? WHITE : opts.bold ? NEAR_BLK : SLATE);
+    doc.text(label, totX, textY);
+    c(doc, opts.accent ? WHITE : opts.bold ? NEAR_BLK : SLATE);
+    doc.text(val, W - MR, textY, { align: "right" });
+    y += h;
+  };
+
+  hline(doc, totX - 4, y - 1, TOT_W + 4, LINE, 0.4);
+
+  totRow("Sous-total HT", fmt(quote.subtotalHT));
 
   if (quote.deadlineSurcharge > 0) {
     const rate = Math.round((deadline?.rate ?? 0) * 100);
-    priceRow(doc, `Délai ${deadline?.label ?? ""} (+${rate}%)`, "+" + fmt(quote.deadlineSurcharge), y); y += 6;
+    totRow(
+      `Majoration délai « ${deadline?.label ?? ""} » (+${rate}%)`,
+      `+ ${fmt(quote.deadlineSurcharge)}`
+    );
   }
 
-  hrule(doc, y); y += 5;
-  priceRow(doc, "Total HT",  fmt(quote.totalHT), y); y += 6;
-  priceRow(doc, "TVA 20 %",  "+" + fmt(quote.tva), y); y += 6;
+  totRow("Total HT",  fmt(quote.totalHT),  { bold: true });
+  totRow("TVA 20 %",  `+ ${fmt(quote.tva)}`);
 
-  // ── Box TTC
-  y += 4;
-  const boxH = 18;
-  rect(doc, 14, y, W - 28, boxH, SURFACE);
-  rect(doc, 14, y, 3, boxH, ACCENT);
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  c(doc, MUTED);
-  doc.text("Total TTC", 22, y + 7);
-  doc.setFontSize(18);
-  doc.setFont("helvetica", "bold");
-  c(doc, ACCENT);
-  doc.text(fmt(quote.totalTTC), W - 20, y + 11, { align: "right" });
+  hline(doc, totX - 4, y, TOT_W + 4, BLUE, 1);
+  y += 2;
+  totRow("TOTAL TTC", fmt(quote.totalTTC), { big: true, accent: true });
 
-  if (data.wantsUnlimited) {
-    y += boxH + 4;
-    doc.setFontSize(8);
+  y += 8;
+
+  // ══════════════════════════════════════════════════════════
+  // CONDITIONS DE RÈGLEMENT
+  // ══════════════════════════════════════════════════════════
+  if (y < 235) {
+    bg(doc, LIGHTER);
+    doc.rect(ML, y, CW, data.wantsUnlimited ? 28 : 22, "F");
+
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "bold");
+    c(doc, BLUE);
+    doc.text("CONDITIONS DE RÈGLEMENT", ML + 4, y + 6);
+
     doc.setFont("helvetica", "normal");
-    c(doc, [251, 191, 36]); // amber
-    doc.text("+ Modifications illimitées : +19,90 €/mois (abonnement mensuel)", 14, y);
+    c(doc, SLATE);
+    doc.setFontSize(8);
+    let cy = y + 12;
+    doc.text("• 30 % à la signature du devis (acompte)", ML + 4, cy); cy += 5;
+    doc.text("• 70 % à la livraison finale du projet",   ML + 4, cy); cy += 5;
+    if (data.wantsUnlimited) {
+      c(doc, [146, 64, 14]);
+      doc.text("• Abonnement modifications illimitées : 19,90 €/mois (résiliable à tout moment)", ML + 4, cy);
+    }
+
+    y += (data.wantsUnlimited ? 28 : 22) + 6;
   }
 
-  // ── Footer
-  rect(doc, 0, 284, W, 13, SURFACE);
-  rect(doc, 0, 284, W, 0.5, ACCENT);
+  // Validité
+  doc.setFontSize(7.5);
+  doc.setFont("helvetica", "italic");
+  c(doc, SLATE_LT);
+  doc.text("Ce devis est valable 30 jours à compter de la date d'émission.", ML, y);
+
+  // ══════════════════════════════════════════════════════════
+  // BON POUR ACCORD
+  // ══════════════════════════════════════════════════════════
+  const sigY = 248;
+  if (y + 20 < sigY) {
+    // Zone signature client
+    doc.setDrawColor(LINE[0], LINE[1], LINE[2]);
+    doc.setLineWidth(0.4);
+    bg(doc, WHITE);
+    doc.rect(ML, sigY, (CW / 2) - 6, 26, "FD");
+
+    doc.setFontSize(7.5);
+    doc.setFont("helvetica", "bold");
+    c(doc, NEAR_BLK);
+    doc.text("Bon pour accord", ML + 4, sigY + 6);
+    doc.setFont("helvetica", "normal");
+    c(doc, SLATE_LT);
+    doc.text("Date et signature du client :", ML + 4, sigY + 11);
+    doc.text("(précédé de « Lu et approuvé »)", ML + 4, sigY + 16);
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // FOOTER
+  // ══════════════════════════════════════════════════════════
+  hline(doc, ML, 282, CW, LINE, 0.3);
   doc.setFontSize(7);
   doc.setFont("helvetica", "normal");
-  c(doc, MUTED);
-  doc.text("OSIRIS — Proposition commerciale confidentielle", 14, 291);
-  doc.text(dateStr, W - 14, 291, { align: "right" });
+  c(doc, SLATE_LT);
+  doc.text(
+    "OSIRIS — Agence Web Premium  ·  contact@osiris-web.com  ·  osiris-web.com",
+    ML, 287
+  );
+  c(doc, BLUE);
+  doc.text(ref, W - MR, 287, { align: "right" });
 
-  // Retourner la data URI (base64)
   return doc.output("datauristring");
 }

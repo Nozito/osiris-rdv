@@ -4,15 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, usePathname } from "next/navigation";
-import {
-  Plus,
-  LogOut,
-  BookUser,
-  Menu,
-  X,
-  Shield,
-  LayoutDashboard,
-} from "lucide-react";
+import { Plus, LogOut, Shield, LayoutDashboard, BookUser } from "lucide-react";
 
 interface Props {
   isAdmin?: boolean;
@@ -32,20 +24,13 @@ const BASE_NAV: NavItem[] = [
 ];
 
 export function DashboardHeader({ isAdmin = false, userEmail = "" }: Props) {
-  const [menuOpen, setMenuOpen]     = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   const router   = useRouter();
   const pathname = usePathname();
 
   // Fermer le menu sur navigation
-  useEffect(() => { setMenuOpen(false); setProfileOpen(false); }, [pathname]);
-
-  // Bloquer le scroll quand le drawer mobile est ouvert
-  useEffect(() => {
-    document.body.style.overflow = menuOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
-  }, [menuOpen]);
+  useEffect(() => { setProfileOpen(false); }, [pathname]);
 
   // Fermer le dropdown profil au clic extérieur
   useEffect(() => {
@@ -201,108 +186,23 @@ export function DashboardHeader({ isAdmin = false, userEmail = "" }: Props) {
           </div>
         </div>
 
-        {/* ── Mobile hamburger ── */}
-        <button
-          className="
-            sm:hidden ml-auto p-2 rounded-lg
-            text-muted hover:text-textc hover:bg-white/[0.06]
-            transition-colors
-          "
-          onClick={() => setMenuOpen((v) => !v)}
-          aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
-        >
-          {menuOpen ? <X size={20} /> : <Menu size={20} />}
-        </button>
+        {/* ── Mobile : avatar profil seul (la nav est dans BottomNav) ── */}
+        <div ref={profileRef} className="sm:hidden ml-auto relative">
+          <button
+            onClick={() => setProfileOpen((v) => !v)}
+            className="
+              w-8 h-8 rounded-full
+              bg-accent/15 border border-accent/25
+              flex items-center justify-center
+              text-accent text-[11px] font-bold
+              hover:bg-accent/25 transition-all
+            "
+            title={userEmail}
+          >
+            {initials}
+          </button>
+        </div>
       </div>
-
-      {/* ── Mobile drawer ── */}
-      {menuOpen && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="sm:hidden fixed inset-0 top-14 bg-black/60 z-10 backdrop-blur-[2px]"
-            onClick={() => setMenuOpen(false)}
-          />
-
-          {/* Panel */}
-          <div className="
-            sm:hidden relative z-20
-            border-t border-white/8
-            bg-[#09091a]/98 backdrop-blur-xl
-            animate-[slideDown_0.18s_ease-out]
-          ">
-            <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-1">
-
-              {/* User info */}
-              {userEmail && (
-                <div className="flex items-center gap-3 px-3 py-2.5 mb-1">
-                  <div className="w-8 h-8 rounded-full bg-accent/15 border border-accent/25 flex items-center justify-center text-accent text-[11px] font-bold shrink-0">
-                    {initials}
-                  </div>
-                  <p className="text-xs text-muted truncate">{userEmail}</p>
-                </div>
-              )}
-
-              <div className="h-px bg-white/8 mb-1" />
-
-              {/* Nav items */}
-              {navItems.map(({ href, label, icon: Icon }) => {
-                const active = isActive(href);
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    className={`
-                      flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm
-                      transition-all
-                      ${active
-                        ? "text-textc bg-accent/10 border border-accent/15"
-                        : "text-muted hover:text-textc hover:bg-white/[0.05] border border-transparent"
-                      }
-                    `}
-                  >
-                    <Icon size={16} className={active ? "text-accent" : "text-faint"} />
-                    {label}
-                    {active && (
-                      <span className="ml-auto w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
-                    )}
-                  </Link>
-                );
-              })}
-
-              <div className="h-px bg-white/8 my-1" />
-
-              <button
-                onClick={handleLogout}
-                className="
-                  flex items-center gap-3 px-3 py-2.5 rounded-xl
-                  text-sm text-muted hover:text-textc hover:bg-white/[0.06]
-                  border border-transparent
-                  transition-all w-full text-left
-                "
-              >
-                <LogOut size={16} className="text-faint" />
-                Se déconnecter
-              </button>
-
-              {/* CTA */}
-              <Link
-                href="/rdv/nouveau"
-                className="
-                  flex items-center justify-center gap-2 h-11 mt-2
-                  rounded-btn bg-accent hover:bg-accent-hover
-                  text-white text-sm font-semibold
-                  shadow-[0_0_20px_rgba(37,99,235,0.4)]
-                  transition-all
-                "
-              >
-                <Plus size={16} />
-                Nouveau RDV
-              </Link>
-            </div>
-          </div>
-        </>
-      )}
     </header>
   );
 }
