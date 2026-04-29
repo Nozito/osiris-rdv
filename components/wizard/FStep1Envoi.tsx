@@ -2,7 +2,7 @@
 // OSIRIS CRM — pricing configurator: étape finale — récap complet + envoi
 
 import { useState } from "react";
-import { Download, Send, Users, CheckCircle, AlertCircle } from "lucide-react";
+import { Download, Send, Users, CheckCircle, AlertCircle, Link2, Copy } from "lucide-react";
 import { useConfigurator } from "./ConfiguratorShell";
 import {
   SITE_TYPES,
@@ -76,16 +76,46 @@ function PriceRow({
 }
 
 export function FStep1Envoi() {
-  const { data, quote } = useConfigurator();
+  const { data, quote, leadId } = useConfigurator();
   const [sendingClient,    setSendingClient]    = useState(false);
   const [sendingDirectors, setSendingDirectors] = useState(false);
   const [sentClient,       setSentClient]       = useState(false);
   const [sentDirectors,    setSentDirectors]    = useState(false);
+  const [generatingLink,   setGeneratingLink]   = useState(false);
+  const [quoteLink,        setQuoteLink]        = useState<string | null>(null);
+  const [copied,           setCopied]           = useState(false);
+  const [includeInEmail,   setIncludeInEmail]   = useState(true);
 
   const clientName = [data.clientFirstName, data.clientLastName].filter(Boolean).join(" ");
   const siteType   = SITE_TYPES.find((s) => s.id === data.siteTypeId);
   const deadline   = DEADLINES.find((d) => d.id === data.deadlineId);
   const allUpgOpts = [...UPGRADE_BUSINESS_OPTIONS, ...UPGRADE_EMPIRE_OPTIONS];
+
+  // ── Génération lien signable
+  const generateLink = async () => {
+    if (!leadId) { toast.error("Sauvegardez d'abord le lead"); return; }
+    setGeneratingLink(true);
+    try {
+      const res = await fetch("/api/quote/generate", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ leadId }),
+      });
+      const json = await res.json();
+      if (!res.ok) { toast.error(json.error ?? "Erreur"); return; }
+      setQuoteLink(json.link);
+      toast.success("Lien généré ✓");
+    } finally {
+      setGeneratingLink(false);
+    }
+  };
+
+  const copyLink = async () => {
+    if (!quoteLink) return;
+    await navigator.clipboard.writeText(quoteLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
+  };
 
   // ── Génération PDF client-side
   const generateAndDownload = async () => {
@@ -339,11 +369,44 @@ export function FStep1Envoi() {
           </Button>
         </div>
 
+        {/* Lien de signature */}
+        <div className="mt-3 pt-3 border-t border-white/8">
+          {!quoteLink ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              loading={generatingLink}
+              onClick={generateLink}
+              icon={<Link2 size={13} />}
+            >
+              Générer un lien de signature
+            </Button>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2 rounded-[10px] bg-surface2 border border-white/8 px-3 py-2">
+                <span className="text-xs text-muted flex-1 truncate">{quoteLink}</span>
+                <button onClick={copyLink} className="shrink-0 text-faint hover:text-accent transition-colors">
+                  {copied ? <CheckCircle size={14} className="text-success" /> : <Copy size={14} />}
+                </button>
+              </div>
+              <label className="flex items-center gap-2 text-xs text-muted cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={includeInEmail}
+                  onChange={(e) => setIncludeInEmail(e.target.checked)}
+                  className="accent-accent"
+                />
+                Inclure le lien dans l&apos;email client
+              </label>
+            </div>
+          )}
+        </div>
+
         {/* Helper */}
         <div className="mt-3 flex items-start gap-2">
           <AlertCircle size={12} className="text-faint shrink-0 mt-0.5" />
           <p className="text-[10px] text-faint leading-relaxed">
-            L'envoi par email requiert <code className="text-faint bg-surface2 px-1 rounded">RESEND_API_KEY</code> dans vos variables d'environnement.
+            L&apos;envoi par email requiert <code className="text-faint bg-surface2 px-1 rounded">RESEND_API_KEY</code> dans vos variables d&apos;environnement.
             Les destinataires directeurs sont configurés via <code className="text-faint bg-surface2 px-1 rounded">NEXT_PUBLIC_DIRECTOR_EMAILS</code>.
           </p>
         </div>
