@@ -27,7 +27,7 @@ function fmt(n: number) {
 }
 
 function buildHtml(body: SendQuoteBody, type: "client" | "directors"): string {
-  const { quote, clientFirstName, clientLastName, clientCompany, clientEmail } = body;
+  const { quote, clientFirstName, clientLastName, clientCompany, clientEmail, trackingToken } = body;
   const name = [clientFirstName, clientLastName].filter(Boolean).join(" ") || "Client";
   const isClient = type === "client";
 
@@ -159,6 +159,9 @@ function buildHtml(body: SendQuoteBody, type: "client" | "directors"): string {
       </table>
     </td></tr>
   </table>
+  ${isClient && trackingToken
+    ? `<img src="${process.env.NEXT_PUBLIC_APP_URL ?? ""}/api/track/${trackingToken}" width="1" height="1" style="display:none" alt="" />`
+    : ""}
 </body>
 </html>`;
 }
@@ -172,6 +175,7 @@ interface SendQuoteBody {
   clientEmail:      string;
   pdfBase64:        string | null;
   quote:            import("@/types").LeadQuote;
+  trackingToken?:   string;
 }
 
 function validateBody(body: unknown): body is SendQuoteBody {
