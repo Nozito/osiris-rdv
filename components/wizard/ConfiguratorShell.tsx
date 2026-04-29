@@ -5,15 +5,18 @@ import {
   createContext,
   useContext,
   useState,
+  useEffect,
   useCallback,
   useRef,
   useMemo,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Save, Trash2, AlertTriangle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Save, Trash2, AlertTriangle, Coins } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
+import { AnimatedPrice } from "@/components/AnimatedPrice";
+import { ConfiguratorSidebar } from "./ConfiguratorSidebar";
 // ── Pré-qualification
 import { QStep1Profil }   from "./QStep1Profil";
 import { QStep2Besoins }  from "./QStep2Besoins";
@@ -90,6 +93,9 @@ function shouldSkipUpgrade(siteTypeId: string) {
   return siteTypeId !== "vitrine-simple" && siteTypeId !== "vitrine-standard";
 }
 
+const DRAFT_KEY = "osiris_rdv_draft";
+const DRAFT_TTL  = 24 * 60 * 60 * 1000; // 24h
+
 export function ConfiguratorShell({
   initialData,
   existingLeadId,
@@ -98,18 +104,44 @@ export function ConfiguratorShell({
 }: ConfiguratorShellProps) {
   const [data, setData]       = useState<ConfiguratorData>({ ...CONFIGURATOR_INITIAL_DATA, ...initialData });
   const [currentStep, setCurrentStep] = useState(initialStep);
+  const [visitedSteps, setVisitedSteps] = useState<Set<number>>(new Set([initialStep]));
   const [leadId, setLeadId]   = useState<string | null>(existingLeadId ?? null);
   const [saving, setSaving]   = useState(false);
   const [direction, setDirection] = useState(1);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [phaseBanner, setPhaseBanner] = useState<string | null>(null);
+  const [draftToast, setDraftToast] = useState<{ data: ConfiguratorData; leadId: string | null } | null>(null);
+  const prevPhaseRef = useRef<StepPhase>(STEPS[initialStep].phase);
   const supabase = createClient();
   const router   = useRouter();
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const update = useCallback((patch: Partial<ConfiguratorData>) => {
-    setData((prev) => ({ ...prev, ...patch }));
+  // BLOC 3.2 — Restauration brouillon localStorage au premier rendu
+  useEffect(() => {
+    if (existingLeadId) return; // pas de restauration si on édite un lead existant
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as { data: ConfiguratorData; leadId: string | null; savedAt: number };
+      if (!saved.data?.clientFirstName) return;
+      if (Date.now() - saved.savedAt > DRAFT_TTL) { localStorage.removeItem(DRAFT_KEY); return; }
+      setDraftToast(saved);
+    } catch {
+      // ignore parse errors
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const update = useCallback((patch: Partial<ConfiguratorData>) => {
+    setData((prev) => {
+      const next = { ...prev, ...patch };
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({ data: next, leadId, savedAt: Date.now() }));
+      } catch { /* ignore */ }
+      return next;
+    });
+  }, [leadId]);
 
   // OSIRIS CRM — pricing configurator: live quote recomputed via calcQuote()
   const quote = useMemo(
@@ -276,27 +308,47 @@ export function ConfiguratorShell({
     [saveToSupabase, update]
   );
 
+  const showPhaseBanner = useCallback((newStep: number) => {
+    const newPhase = STEPS[newStep].phase;
+    if (newPhase !== prevPhaseRef.current) {
+      prevPhaseRef.current = newPhase;
+      setPhaseBanner(PHASE_LABELS[newPhase]);
+      setTimeout(() => setPhaseBanner(null), 1200);
+    }
+  }, []);
+
   const navigate = useCallback(
-    (step: number) => { setDirection(step > currentStep ? 1 : -1); setCurrentStep(step); },
-    [currentStep]
+    (step: number) => {
+      if (!visitedSteps.has(step)) return; // non-visité → non-cliquable
+      setDirection(step > currentStep ? 1 : -1);
+      setCurrentStep(step);
+      showPhaseBanner(step);
+    },
+    [currentStep, visitedSteps, showPhaseBanner]
   );
 
   const next = useCallback(() => {
     setDirection(1);
     setCurrentStep((s) => {
       // OSIRIS CRM — pricing configurator: skip Upgrade (idx 5) pour vitrine-premium
-      if (s === 4 && shouldSkipUpgrade(data.siteTypeId)) return 6;
-      return Math.min(s + 1, STEPS.length - 1);
+      const nextS = s === 4 && shouldSkipUpgrade(data.siteTypeId)
+        ? 6
+        : Math.min(s + 1, STEPS.length - 1);
+      setVisitedSteps((v) => new Set([...v, nextS]));
+      showPhaseBanner(nextS);
+      return nextS;
     });
     triggerSave(data, leadId);
-  }, [data, leadId, triggerSave]);
+  }, [data, leadId, triggerSave, showPhaseBanner]);
 
   const prev = useCallback(() => {
     setDirection(-1);
     setCurrentStep((s) => {
       // OSIRIS CRM — pricing configurator: skip Upgrade en retour pour vitrine-premium
-      if (s === 6 && shouldSkipUpgrade(data.siteTypeId)) return 4;
-      return Math.max(s - 1, 0);
+      const prevS = s === 6 && shouldSkipUpgrade(data.siteTypeId)
+        ? 4
+        : Math.max(s - 1, 0);
+      return prevS;
     });
   }, [data.siteTypeId]);
 
@@ -342,8 +394,15 @@ export function ConfiguratorShell({
     exit:   (dir: number) => ({ x: dir > 0 ? -40 : 40, opacity: 0 }),
   };
 
-  const progress    = ((currentStep + 1) / STEPS.length) * 100;
+  const progress     = ((currentStep + 1) / STEPS.length) * 100;
   const currentPhase = STEPS[currentStep].phase;
+
+  // Phase icons / colors for the banner
+  const PHASE_COLORS: Record<StepPhase, string> = {
+    qual:  "text-blue-300",
+    devis: "text-accent",
+    envoi: "text-success",
+  };
 
   return (
     <ConfiguratorContext.Provider
@@ -351,9 +410,60 @@ export function ConfiguratorShell({
     >
       <div className="flex flex-col min-h-screen">
 
+        {/* Phase change banner — overlay 1 seconde */}
+        <AnimatePresence>
+          {phaseBanner && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="fixed inset-x-0 top-16 z-50 flex justify-center pointer-events-none"
+            >
+              <div className="flex items-center gap-3 bg-surface/90 border border-white/12 rounded-2xl px-5 py-3 shadow-xl backdrop-blur">
+                <span className={`text-sm font-bold font-display ${PHASE_COLORS[currentPhase]}`}>
+                  {phaseBanner}
+                </span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Toast brouillon localStorage */}
+        <AnimatePresence>
+          {draftToast && (
+            <motion.div
+              initial={{ opacity: 0, y: 48 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 48 }}
+              className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-surface border border-white/12 rounded-2xl px-4 py-3 shadow-xl"
+            >
+              <span className="text-xs text-textc">
+                Brouillon récupéré — {draftToast.data.clientFirstName}
+              </span>
+              <button
+                onClick={() => {
+                  setData(draftToast.data);
+                  if (draftToast.leadId) setLeadId(draftToast.leadId);
+                  setDraftToast(null);
+                  toast.success("Brouillon restauré ✓");
+                }}
+                className="text-xs font-semibold text-accent hover:underline"
+              >
+                Restaurer
+              </button>
+              <button
+                onClick={() => { localStorage.removeItem(DRAFT_KEY); setDraftToast(null); }}
+                className="text-xs text-faint hover:text-textc"
+              >
+                Ignorer
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Header */}
         <header className="sticky top-0 z-30 bg-bg/95 backdrop-blur border-b border-white/8">
-          <div className="max-w-4xl mx-auto px-4 py-3">
+          <div className="max-w-[1200px] mx-auto px-4 py-3">
 
             {/* Top row */}
             <div className="flex items-center gap-3 mb-2.5">
@@ -363,11 +473,9 @@ export function ConfiguratorShell({
               </Link>
               <span className="hidden sm:block h-4 w-px bg-white/10 shrink-0" />
               <div className="flex-1 min-w-0">
-                {/* Mobile : nom étape */}
                 <p className="sm:hidden text-[13px] font-medium text-textc truncate">
                   {STEPS[currentStep].label}
                 </p>
-                {/* Desktop : phase active */}
                 <p className="hidden sm:block text-[12px] text-muted truncate">
                   {existingLeadId ? "Modifier le lead" : "Nouveau RDV"}&nbsp;
                   <span className="text-accent font-medium">— {PHASE_LABELS[currentPhase]}</span>
@@ -381,7 +489,7 @@ export function ConfiguratorShell({
               </div>
             </div>
 
-            {/* Mobile : barre */}
+            {/* Mobile : barre de progression */}
             <div className="sm:hidden">
               <div className="h-1 rounded-full bg-surface2 overflow-hidden">
                 <motion.div
@@ -393,33 +501,35 @@ export function ConfiguratorShell({
               </div>
             </div>
 
-            {/* Desktop : stepper avec séparation de phases */}
-            <div className="hidden sm:flex items-center gap-0.5">
+            {/* Desktop : stepper horizontal (masqué sur lg — remplacé par stepper vertical col 1) */}
+            <div className="hidden sm:flex lg:hidden items-center gap-0.5">
               {STEPS.map((step, i) => {
-                // Séparateur de phase entre les phases
-                const prevPhase = i > 0 ? STEPS[i - 1].phase : step.phase;
+                const prevPhase  = i > 0 ? STEPS[i - 1].phase : step.phase;
                 const phaseChange = i > 0 && step.phase !== prevPhase;
-                const dotColor =
-                  i < currentStep
-                    ? "bg-accent text-white shadow-[0_0_8px_rgba(37,99,235,0.5)]"
-                    : i === currentStep
-                    ? "bg-accent/20 text-accent border border-accent/50"
-                    : step.phase === "qual"
-                    ? "bg-surface2 text-faint border border-white/8"
-                    : step.phase === "envoi"
-                    ? "bg-surface2 text-faint border border-white/8"
-                    : "bg-surface2 text-faint border border-white/8";
+                const isCompleted = i < currentStep;
+                const isCurrent   = i === currentStep;
+                const isVisited   = visitedSteps.has(i);
+                const canClick    = isVisited && i !== currentStep;
+
+                const dotColor = isCompleted
+                  ? "bg-accent text-white shadow-[0_0_8px_rgba(37,99,235,0.5)]"
+                  : isCurrent
+                  ? "bg-accent/20 text-accent border border-accent/50"
+                  : "bg-surface2 text-faint border border-white/8";
 
                 return (
                   <div key={i} className="flex items-center gap-0.5 flex-1 min-w-0">
-                    {/* Séparateur de phase */}
                     {phaseChange && (
                       <div className="w-1.5 h-1.5 rounded-full bg-white/20 shrink-0 mx-0.5" />
                     )}
-                    <div className={`shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-300 ${dotColor}`}>
-                      {i < currentStep ? "✓" : step.short}
-                    </div>
-                    <span className={`hidden lg:block text-[10px] truncate transition-colors mr-0.5 ${i === currentStep ? "text-textc font-medium" : "text-faint"}`}>
+                    <button
+                      disabled={!canClick}
+                      onClick={() => canClick && navigate(i)}
+                      className={`shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-300 ${dotColor} ${canClick ? "cursor-pointer hover:scale-110" : "cursor-default"}`}
+                    >
+                      {isCompleted ? "✓" : step.short}
+                    </button>
+                    <span className={`hidden lg:block text-[10px] truncate transition-colors mr-0.5 ${isCurrent ? "text-textc font-medium" : "text-faint"}`}>
                       {step.label}
                     </span>
                     {i < STEPS.length - 1 && (
@@ -427,7 +537,7 @@ export function ConfiguratorShell({
                         <motion.div
                           className="absolute inset-y-0 left-0 bg-accent/50 rounded-full"
                           initial={false}
-                          animate={{ width: i < currentStep ? "100%" : "0%" }}
+                          animate={{ width: isCompleted ? "100%" : "0%" }}
                           transition={{ duration: 0.35 }}
                         />
                       </motion.div>
@@ -439,29 +549,82 @@ export function ConfiguratorShell({
           </div>
         </header>
 
-        {/* Main */}
-        <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-5">
-          <AnimatePresence mode="wait" custom={direction}>
-            <motion.div
-              key={currentStep}
-              custom={direction}
-              variants={variants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ duration: 0.2, ease: "easeInOut" }}
-            >
-              {stepComponents[currentStep]}
-            </motion.div>
-          </AnimatePresence>
-        </main>
+        {/* Layout principal — 3 colonnes sur lg */}
+        <div className="flex-1 flex max-w-[1200px] mx-auto w-full">
+
+          {/* Col 1 (lg only) : stepper vertical avec phases groupées */}
+          <nav className="hidden lg:flex flex-col w-48 shrink-0 sticky top-[72px] self-start pt-6 pb-4 px-4 h-[calc(100vh-72px)]">
+            {STEPS.map((step, i) => {
+              const isCompleted = i < currentStep;
+              const isCurrent   = i === currentStep;
+              const isVisited   = visitedSteps.has(i);
+              const canClick    = isVisited && i !== currentStep;
+              const phaseChange = i > 0 && STEPS[i - 1].phase !== step.phase;
+
+              return (
+                <div key={i}>
+                  {phaseChange && (
+                    <div className="flex items-center gap-2 my-2">
+                      <div className="flex-1 h-px bg-white/8" />
+                      <span className="text-[9px] font-bold text-faint uppercase tracking-wider">
+                        {PHASE_LABELS[step.phase]}
+                      </span>
+                      <div className="flex-1 h-px bg-white/8" />
+                    </div>
+                  )}
+                  <button
+                    disabled={!canClick}
+                    onClick={() => canClick && navigate(i)}
+                    className={`
+                      w-full flex items-center gap-2 py-1.5 px-2 rounded-lg text-left transition-all
+                      ${isCurrent ? "bg-accent/10 text-textc" : "text-faint hover:text-muted"}
+                      ${canClick ? "cursor-pointer" : "cursor-default"}
+                    `}
+                  >
+                    <div className={`
+                      shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all
+                      ${isCompleted ? "bg-accent text-white shadow-[0_0_6px_rgba(37,99,235,0.5)]" : isCurrent ? "bg-accent/20 text-accent border border-accent/50" : "bg-surface2 text-faint border border-white/8"}
+                    `}>
+                      {isCompleted ? "✓" : step.short}
+                    </div>
+                    <span className={`text-[11px] truncate ${isCurrent ? "font-medium text-textc" : "text-faint"}`}>
+                      {step.label}
+                    </span>
+                  </button>
+                </div>
+              );
+            })}
+          </nav>
+
+          {/* Col 2 : contenu du step */}
+          <main className="flex-1 px-4 py-5 min-w-0">
+            <AnimatePresence mode="wait" custom={direction}>
+              <motion.div
+                key={currentStep}
+                custom={direction}
+                variants={variants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+              >
+                {stepComponents[currentStep]}
+              </motion.div>
+            </AnimatePresence>
+          </main>
+
+          {/* Col 3 (lg only) : ConfiguratorSidebar */}
+          <div className="hidden lg:block pt-6 pr-4">
+            <ConfiguratorSidebar />
+          </div>
+        </div>
 
         {/* Footer navigation */}
         <footer className="sticky bottom-0 z-30 bg-bg/95 backdrop-blur border-t border-white/8">
           <AnimatePresence mode="wait">
             {deleteConfirm ? (
               <motion.div key="confirm" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
-                className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
+                className="max-w-[1200px] mx-auto px-4 py-3 flex items-center gap-3">
                 <AlertTriangle size={15} className="text-danger shrink-0" />
                 <span className="text-sm text-textc flex-1">Supprimer ce lead ?</span>
                 <Button variant="ghost" size="sm" onClick={() => setDeleteConfirm(false)}>Annuler</Button>
@@ -469,7 +632,7 @@ export function ConfiguratorShell({
               </motion.div>
             ) : (
               <motion.div key="nav" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-2">
+                className="max-w-[1200px] mx-auto px-4 py-3 flex items-center gap-2">
                 <Button variant="ghost" size="sm" onClick={prev} disabled={currentStep === 0} icon={<ChevronLeft size={15} />}>
                   <span className="hidden sm:inline">Précédent</span>
                 </Button>
@@ -479,6 +642,22 @@ export function ConfiguratorShell({
                     className="p-2 rounded-[10px] text-faint hover:text-danger hover:bg-danger/8 transition-all" title="Supprimer ce lead">
                     <Trash2 size={15} />
                   </button>
+                )}
+
+                {/* BLOC 4.4 — Price pill sticky mobile (phase devis uniquement) */}
+                {currentPhase === "devis" && quote.totalTTC > 0 && (
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="sm:hidden flex items-center gap-1.5 h-8 px-3 rounded-[10px] bg-accent/10 border border-accent/25"
+                  >
+                    <Coins size={12} className="text-accent" />
+                    <AnimatedPrice
+                      value={quote.totalTTC}
+                      suffix=" €"
+                      className="text-xs font-bold text-accent"
+                    />
+                  </motion.div>
                 )}
 
                 <div className="flex-1" />
