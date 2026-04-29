@@ -2,10 +2,11 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Search, X, FileText, Plus } from "lucide-react";
+import { Search, X, FileText, Plus, ArrowUpDown } from "lucide-react";
 import { formatPrice } from "@/lib/pricing";
 import { DeleteLeadButton } from "@/components/DeleteLeadButton";
 import { QuickStatusPicker } from "@/components/QuickStatusPicker";
+import { calcLeadScore, leadScoreColor } from "@/lib/lead-score";
 import type { Lead, LeadStatus } from "@/types";
 
 const STATUS_TABS: { value: "all" | LeadStatus; label: string }[] = [
@@ -35,9 +36,10 @@ interface Props {
 }
 
 export function LeadListClient({ initialLeads }: Props) {
-  const [leads, setLeads] = useState<Lead[]>(initialLeads);
-  const [query, setQuery] = useState("");
+  const [leads, setLeads]       = useState<Lead[]>(initialLeads);
+  const [query, setQuery]       = useState("");
   const [activeTab, setActiveTab] = useState<"all" | LeadStatus>("all");
+  const [sortByScore, setSortByScore] = useState(false);
 
   const filtered = useMemo(() => {
     let list = leads;
@@ -53,8 +55,15 @@ export function LeadListClient({ initialLeads }: Props) {
           (l.project_type ?? "").toLowerCase().includes(q)
       );
     }
+    if (sortByScore) {
+      list = [...list].sort((a, b) => {
+        const sa = calcLeadScore(a.quote_data ?? {}, (a.quote_data?.totalTTC ?? a.total_one_time));
+        const sb = calcLeadScore(b.quote_data ?? {}, (b.quote_data?.totalTTC ?? b.total_one_time));
+        return sb - sa;
+      });
+    }
     return list;
-  }, [leads, query, activeTab]);
+  }, [leads, query, activeTab, sortByScore]);
 
   const counts = useMemo(
     () => ({
@@ -118,9 +127,9 @@ export function LeadListClient({ initialLeads }: Props) {
         )}
       </div>
 
-      {/* Filtres statut */}
+      {/* Filtres statut + tri score */}
       {leads.length > 0 && (
-        <div className="flex gap-1 px-4 sm:px-5 py-2 border-b border-white/8 overflow-x-auto scrollbar-none">
+        <div className="flex gap-1 px-4 sm:px-5 py-2 border-b border-white/8 overflow-x-auto scrollbar-none items-center">
           {STATUS_TABS.map((tab) => {
             const count = counts[tab.value];
             const isActive = activeTab === tab.value;
@@ -149,6 +158,15 @@ export function LeadListClient({ initialLeads }: Props) {
               </button>
             );
           })}
+          <div className="flex-1" />
+          <button
+            onClick={() => setSortByScore((v) => !v)}
+            title="Trier par score"
+            className={`shrink-0 flex items-center gap-1 h-7 px-2 rounded-lg text-xs transition-all ${sortByScore ? "bg-accent/15 text-accent border border-accent/25" : "text-faint hover:text-muted border border-transparent"}`}
+          >
+            <ArrowUpDown size={10} />
+            Score
+          </button>
         </div>
       )}
 
@@ -225,8 +243,18 @@ export function LeadListClient({ initialLeads }: Props) {
                   </p>
                 </div>
 
-                {/* Prix + date */}
+                {/* Prix + score + date */}
                 <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                  {/* Badge score */}
+                  {(() => {
+                    const totalTTC = lead.quote_data?.totalTTC ?? lead.total_one_time;
+                    const score = calcLeadScore(lead.quote_data ?? {}, totalTTC);
+                    return (
+                      <span className={`hidden sm:flex items-center justify-center w-7 h-7 rounded-full text-[10px] font-bold border ${leadScoreColor(score)}`}>
+                        {score}
+                      </span>
+                    );
+                  })()}
                   <span className={`text-xs sm:text-sm font-semibold ${lead.status === "signed" ? "text-success" : lead.status === "lost" ? "text-faint line-through" : "text-textc"}`}>
                     {lead.quote_data
                       ? lead.quote_data.totalTTC.toLocaleString("fr-FR") + " €"
