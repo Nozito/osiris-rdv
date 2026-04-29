@@ -162,6 +162,32 @@ export function QStep1Profil() {
           </div>
         )}
       </div>
+
+      {/* Date & heure du RDV */}
+      <div className="rounded-xl border border-white/8 bg-surface p-5 mt-4">
+        <p className="text-xs font-bold text-muted uppercase tracking-wider mb-3">Date & heure du RDV</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-muted mb-1">Date et heure</label>
+            <input
+              type="datetime-local"
+              value={data.rdvDate}
+              onChange={(e) => update({ rdvDate: e.target.value })}
+              className="w-full h-9 px-3 rounded-[10px] bg-surface2 border border-white/8 text-sm text-textc outline-none focus:border-accent/40 transition-colors"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-muted mb-1">Notes pré-RDV</label>
+            <textarea
+              value={data.rdvNotes}
+              onChange={(e) => update({ rdvNotes: e.target.value })}
+              placeholder="Points à aborder, contexte…"
+              rows={3}
+              className="w-full px-3 py-2 rounded-[10px] bg-surface2 border border-white/8 text-sm text-textc placeholder:text-faint outline-none focus:border-accent/40 transition-colors resize-none"
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

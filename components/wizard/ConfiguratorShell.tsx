@@ -245,6 +245,8 @@ export function ConfiguratorShell({
           discount_percent:     d.discountPercent || 0,
           discount_reason:      d.discountReason || "",
           discount_conditions:  d.discountConditions || "",
+          rdv_date:             d.rdvDate || null,
+          rdv_notes:            d.rdvNotes || "",
         };
 
         // Workflow validation admin si remise > 15%

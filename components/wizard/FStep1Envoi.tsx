@@ -2,7 +2,7 @@
 // OSIRIS CRM — pricing configurator: étape finale — récap complet + envoi
 
 import { useState } from "react";
-import { Download, Send, Users, CheckCircle, AlertCircle, Link2, Copy } from "lucide-react";
+import { Download, Send, Users, CheckCircle, AlertCircle, Link2, Copy, Calendar } from "lucide-react";
 import { useConfigurator } from "./ConfiguratorShell";
 import {
   SITE_TYPES,
@@ -90,6 +90,21 @@ export function FStep1Envoi() {
   const siteType   = SITE_TYPES.find((s) => s.id === data.siteTypeId);
   const deadline   = DEADLINES.find((d) => d.id === data.deadlineId);
   const allUpgOpts = [...UPGRADE_BUSINESS_OPTIONS, ...UPGRADE_EMPIRE_OPTIONS];
+
+  // ── Génération .ics calendrier
+  const downloadCalendar = async () => {
+    if (!data.rdvDate) { toast.error("Aucune date de RDV renseignée"); return; }
+    const { generateICS, downloadICS } = await import("@/lib/generate-ics");
+    const ics = generateICS({
+      clientName:    clientName || "Client",
+      rdvDate:       data.rdvDate,
+      siteTypeLabel: siteType?.label ?? data.siteTypeId,
+      totalTTC:      quote.totalTTC,
+      quoteToken:    quoteLink?.split("/").pop(),
+      appUrl:        process.env.NEXT_PUBLIC_APP_URL,
+    });
+    downloadICS(ics, `rdv-osiris-${(clientName || "client").toLowerCase().replace(/\s+/g, "-")}.ics`);
+  };
 
   // ── Génération lien signable
   const generateLink = async () => {
@@ -343,6 +358,18 @@ export function FStep1Envoi() {
           >
             Télécharger le PDF
           </Button>
+
+          {/* Calendrier .ics */}
+          {data.rdvDate && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={downloadCalendar}
+              icon={<Calendar size={13} />}
+            >
+              Ajouter au calendrier
+            </Button>
+          )}
 
           {/* Envoyer au client */}
           <Button

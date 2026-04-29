@@ -71,6 +71,10 @@ export interface ConfiguratorData {
   discountReason:     string;
   discountConditions: string;
 
+  // ── Date RDV
+  rdvDate:  string;
+  rdvNotes: string;
+
   // ── Configurateur (steps 4–9, INCHANGÉS)
   siteTypeId:        string;
   extraPages:        number;
@@ -99,6 +103,8 @@ export const CONFIGURATOR_INITIAL_DATA: ConfiguratorData = {
   discountPercent:    0,
   discountReason:     "",
   discountConditions: "",
+  rdvDate:            "",
+  rdvNotes:           "",
   siteTypeId:         "",
   extraPages:         0,
   selectedUpgrades:   [],
@@ -174,6 +180,10 @@ export interface Lead {
   discount_conditions:  string | null;
   discount_validated_at: string | null;
   discount_validated_by: string | null;
+
+  // Date RDV
+  rdv_date:  string | null;
+  rdv_notes: string | null;
 }
 
 export interface WizardData {
