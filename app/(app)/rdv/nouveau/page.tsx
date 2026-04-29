@@ -3,8 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = { title: "Nouveau RDV" };
 
 import { createServerClient } from "@/lib/supabase/server";
-// OSIRIS CRM — pricing configurator
-import { ConfiguratorShell } from "@/components/wizard/ConfiguratorShell";
+import { NouveauRdvWrapper } from "@/components/wizard/NouveauRdvWrapper";
 import type { ConfiguratorData } from "@/types";
 
 export default async function NouveauRdvPage({
@@ -15,8 +14,9 @@ export default async function NouveauRdvPage({
   const { clientId } = await searchParams;
 
   let initialData: Partial<ConfiguratorData> = {};
+  let hasPrefilledClient = false;
 
-  // OSIRIS CRM — pricing configurator: pre-fill client info if coming from client page
+  // Pré-remplissage si clientId fourni depuis la fiche client
   if (clientId) {
     const supabase = await createServerClient();
     const { data: client } = await supabase
@@ -33,9 +33,16 @@ export default async function NouveauRdvPage({
         clientLastName:  parts.slice(1).join(" "),
         clientEmail:     client.email,
         clientPhone:     client.phone,
+        clientCompany:   client.company,
       };
+      hasPrefilledClient = true;
     }
   }
 
-  return <ConfiguratorShell initialData={initialData} />;
+  return (
+    <NouveauRdvWrapper
+      initialData={initialData}
+      hasPrefilledClient={hasPrefilledClient}
+    />
+  );
 }

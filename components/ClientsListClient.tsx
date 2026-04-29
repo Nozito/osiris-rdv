@@ -270,6 +270,13 @@ export function ClientsListClient({ clients, isAdmin }: Props) {
                     <Plus size={12} />
                     Nouveau RDV
                   </Link>
+                  <Link
+                    href={`/clients/${client.id}`}
+                    className="flex items-center justify-center gap-1.5 h-8 px-3 rounded-[10px] bg-surface2 hover:bg-white/8 text-muted hover:text-textc text-xs transition-all active:scale-95 border border-white/8"
+                    title="Fiche client"
+                  >
+                    <BookUser size={12} />
+                  </Link>
                   {lastLead && (
                     <Link
                       href={`/rdv/${lastLead.id}`}
