@@ -1,4 +1,4 @@
-export type LeadStatus = "draft" | "sent" | "signed" | "lost";
+export type LeadStatus = "draft" | "sent" | "signed" | "lost" | "pending_approval";
 export type UserRole = "admin" | "commercial";
 
 // OSIRIS CRM — pricing configurator
@@ -33,6 +33,10 @@ export interface LeadQuote {
   subtotalHT:        number;
   deadlineSurcharge: number;
   totalHT:           number;
+  // Remise
+  discountPercent:   number;
+  discountAmount:    number;
+  totalHT_apres_remise: number;
   tva:               number;
   totalTTC:          number;
 }
@@ -62,6 +66,11 @@ export interface ConfiguratorData {
   clientOwnEstimate: number | null;
   clientBudgetNotes: string;
 
+  // ── Remise / Négociation
+  discountPercent:    number;
+  discountReason:     string;
+  discountConditions: string;
+
   // ── Configurateur (steps 4–9, INCHANGÉS)
   siteTypeId:        string;
   extraPages:        number;
@@ -72,27 +81,30 @@ export interface ConfiguratorData {
 }
 
 export const CONFIGURATOR_INITIAL_DATA: ConfiguratorData = {
-  clientId:          null,
-  clientFirstName:   "",
-  clientLastName:    "",
-  clientEmail:       "",
-  clientPhone:       "",
-  clientCompany:     "",
-  clientIndustry:    "",
-  clientCompanySize: "",
-  clientCurrentSite: "",
-  clientSiteUrl:     "",
-  clientObjectives:  [],
-  clientNeeds:       "",
-  clientBudgetRange: "",
-  clientOwnEstimate: null,
-  clientBudgetNotes: "",
-  siteTypeId:        "",
-  extraPages:        0,
-  selectedUpgrades:  [],
-  selectedUniversal: [],
-  wantsUnlimited:    false,
-  deadlineId:        "standard",
+  clientId:           null,
+  clientFirstName:    "",
+  clientLastName:     "",
+  clientEmail:        "",
+  clientPhone:        "",
+  clientCompany:      "",
+  clientIndustry:     "",
+  clientCompanySize:  "",
+  clientCurrentSite:  "",
+  clientSiteUrl:      "",
+  clientObjectives:   [],
+  clientNeeds:        "",
+  clientBudgetRange:  "",
+  clientOwnEstimate:  null,
+  clientBudgetNotes:  "",
+  discountPercent:    0,
+  discountReason:     "",
+  discountConditions: "",
+  siteTypeId:         "",
+  extraPages:         0,
+  selectedUpgrades:   [],
+  selectedUniversal:  [],
+  wantsUnlimited:     false,
+  deadlineId:         "standard",
 };
 
 /** Utilisateur de l'application (table `profiles`) */
@@ -155,6 +167,13 @@ export interface Lead {
 
   // OSIRIS CRM — pricing configurator
   quote_data: LeadQuote | null;
+
+  // Remise / Négociation
+  discount_percent:     number | null;
+  discount_reason:      string | null;
+  discount_conditions:  string | null;
+  discount_validated_at: string | null;
+  discount_validated_by: string | null;
 }
 
 export interface WizardData {

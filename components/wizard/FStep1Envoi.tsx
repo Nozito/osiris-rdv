@@ -276,8 +276,14 @@ export function FStep1Envoi() {
               value={"+" + fmt(quote.deadlineSurcharge)}
             />
           )}
-          <PriceRow label="Total HT"  value={fmt(quote.totalHT)} bold />
-          <PriceRow label="TVA 20 %"  value={"+" + fmt(quote.tva)} />
+          <PriceRow label="Total HT" value={fmt(quote.totalHT)} bold />
+          {quote.discountAmount > 0 && (
+            <div className="flex items-center justify-between gap-4 py-1.5">
+              <span className="text-xs text-red-400">Remise –{quote.discountPercent}%</span>
+              <span className="text-xs font-semibold text-red-400">–{fmt(quote.discountAmount)}</span>
+            </div>
+          )}
+          <PriceRow label="TVA 20 %" value={"+" + fmt(quote.tva)} />
 
           {/* TTC */}
           <div className="mt-3 rounded-xl bg-surface2 border border-white/8 px-4 py-3 flex items-center justify-between">

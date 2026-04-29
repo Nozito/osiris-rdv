@@ -9,11 +9,12 @@ import { QuickStatusPicker } from "@/components/QuickStatusPicker";
 import type { Lead, LeadStatus } from "@/types";
 
 const STATUS_TABS: { value: "all" | LeadStatus; label: string }[] = [
-  { value: "all",    label: "Tous" },
-  { value: "draft",  label: "Brouillons" },
-  { value: "sent",   label: "Envoyés" },
-  { value: "signed", label: "Signés" },
-  { value: "lost",   label: "Perdus" },
+  { value: "all",              label: "Tous" },
+  { value: "draft",            label: "Brouillons" },
+  { value: "sent",             label: "Envoyés" },
+  { value: "signed",           label: "Signés" },
+  { value: "lost",             label: "Perdus" },
+  { value: "pending_approval", label: "En attente" },
 ];
 
 // Affiche "il y a 2 jours" au lieu d'une date brute
@@ -57,11 +58,12 @@ export function LeadListClient({ initialLeads }: Props) {
 
   const counts = useMemo(
     () => ({
-      all:    leads.length,
-      draft:  leads.filter((l) => l.status === "draft").length,
-      sent:   leads.filter((l) => l.status === "sent").length,
-      signed: leads.filter((l) => l.status === "signed").length,
-      lost:   leads.filter((l) => l.status === "lost").length,
+      all:              leads.length,
+      draft:            leads.filter((l) => l.status === "draft").length,
+      sent:             leads.filter((l) => l.status === "sent").length,
+      signed:           leads.filter((l) => l.status === "signed").length,
+      lost:             leads.filter((l) => l.status === "lost").length,
+      pending_approval: leads.filter((l) => l.status === "pending_approval").length,
     }),
     [leads]
   );

@@ -120,8 +120,9 @@ export function ConfiguratorShell({
         selectedUpgrades:  data.selectedUpgrades,
         selectedUniversal: data.selectedUniversal,
         deadlineId:        data.deadlineId || "standard",
+        discountPercent:   data.discountPercent,
       }),
-    [data.siteTypeId, data.extraPages, data.selectedUpgrades, data.selectedUniversal, data.deadlineId]
+    [data.siteTypeId, data.extraPages, data.selectedUpgrades, data.selectedUniversal, data.deadlineId, data.discountPercent]
   );
 
   const upsertClient = useCallback(
@@ -155,6 +156,7 @@ export function ConfiguratorShell({
           selectedUpgrades:  d.selectedUpgrades,
           selectedUniversal: d.selectedUniversal,
           deadlineId:        d.deadlineId || "standard",
+          discountPercent:   d.discountPercent,
         });
 
         const siteType = SITE_TYPES.find((s) => s.id === d.siteTypeId);
@@ -189,29 +191,36 @@ export function ConfiguratorShell({
 
         // OSIRIS CRM — pricing configurator: total_one_time = totalTTC pour rétro-compat affichage prix
         const payload = {
-          commercial_id:       user.id,
-          client_id:           resolvedClientId,
-          client_name:         [d.clientFirstName, d.clientLastName].filter(Boolean).join(" "),
-          client_email:        d.clientEmail,
-          client_company:      d.clientCompany,
-          client_phone:        d.clientPhone,
-          project_type:        d.siteTypeId,
-          project_description: d.clientNeeds,
-          project_deadline:    null,
-          selected_pages:      d.selectedUniversal,
-          design_style:        "template",
-          brand_assets:        false,
-          tech_options:        [] as string[],
-          budget_range:        d.clientBudgetRange,
-          total_one_time:      q.totalTTC,
-          total_monthly:       d.wantsUnlimited ? 20 : 0,
-          adjusted_price:      null,
-          notes:               d.clientBudgetNotes,
-          quote_data:          quoteData,
+          commercial_id:        user.id,
+          client_id:            resolvedClientId,
+          client_name:          [d.clientFirstName, d.clientLastName].filter(Boolean).join(" "),
+          client_email:         d.clientEmail,
+          client_company:       d.clientCompany,
+          client_phone:         d.clientPhone,
+          project_type:         d.siteTypeId,
+          project_description:  d.clientNeeds,
+          project_deadline:     null,
+          selected_pages:       d.selectedUniversal,
+          design_style:         "template",
+          brand_assets:         false,
+          tech_options:         [] as string[],
+          budget_range:         d.clientBudgetRange,
+          total_one_time:       q.totalTTC,
+          total_monthly:        d.wantsUnlimited ? 20 : 0,
+          adjusted_price:       null,
+          notes:                d.clientBudgetNotes,
+          quote_data:           quoteData,
+          discount_percent:     d.discountPercent || 0,
+          discount_reason:      d.discountReason || "",
+          discount_conditions:  d.discountConditions || "",
         };
 
+        // Workflow validation admin si remise > 15%
+        const statusOverride = d.discountPercent > 15 ? "pending_approval" : undefined;
+
         if (id) {
-          const { error } = await supabase.from("leads").update(payload).eq("id", id);
+          const updatePayload = statusOverride ? { ...payload, status: statusOverride } : payload;
+          const { error } = await supabase.from("leads").update(updatePayload).eq("id", id);
           if (error) {
             console.error("[saveToSupabase] update error:", error);
             // Retry without quote_data if column is missing
@@ -225,8 +234,9 @@ export function ConfiguratorShell({
           }
           return { leadId: id, clientId: resolvedClientId };
         } else {
+          const insertStatus = statusOverride ?? "draft";
           const { data: ins, error } = await supabase
-            .from("leads").insert({ ...payload, status: "draft" }).select("id").single();
+            .from("leads").insert({ ...payload, status: insertStatus }).select("id").single();
           if (error) {
             console.error("[saveToSupabase] insert error:", error);
             // Retry without quote_data if column is missing
@@ -295,7 +305,11 @@ export function ConfiguratorShell({
     const result = await saveToSupabase(data, leadId);
     if (result.leadId) {
       if (!leadId) setLeadId(result.leadId);
-      toast.success("Devis validé ✓");
+      if (data.discountPercent > 15) {
+        toast.success("Devis en attente de validation admin (remise > 15%) ⏳");
+      } else {
+        toast.success("Devis validé ✓");
+      }
       router.push("/dashboard");
     }
   }, [data, leadId, saveToSupabase, router]);

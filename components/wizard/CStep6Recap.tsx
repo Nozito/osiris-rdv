@@ -1,8 +1,10 @@
 "use client";
 // OSIRIS CRM — pricing configurator
 
+import { useState } from "react";
 import { PenSquare } from "lucide-react";
 import { useConfigurator } from "./ConfiguratorShell";
+import { DiscountPanel } from "@/components/DiscountPanel";
 import {
   SITE_TYPES,
   UPGRADE_BUSINESS_OPTIONS,
@@ -41,6 +43,7 @@ function Line({
 
 export function CStep6Recap() {
   const { data, update, quote, navigate, validate, saving, leadId } = useConfigurator();
+  const [discountApplied, setDiscountApplied] = useState(data.discountPercent > 0);
 
   const siteType   = SITE_TYPES.find((s) => s.id === data.siteTypeId);
   const deadline   = DEADLINES.find((d) => d.id === data.deadlineId);
@@ -94,8 +97,16 @@ export function CStep6Recap() {
           />
         )}
 
-        <Line label="Total HT"  value={fmt(quote.totalHT)} bold />
-        <Line label="TVA 20 %"  value={`+${fmt(quote.tva)}`} />
+        <Line label="Total HT" value={fmt(quote.totalHT)} bold />
+
+        {quote.discountAmount > 0 && (
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-sm text-red-400">Remise –{quote.discountPercent}%</span>
+            <span className="text-sm font-semibold text-red-400">–{fmt(quote.discountAmount)}</span>
+          </div>
+        )}
+
+        <Line label="TVA 20 %" value={`+${fmt(quote.tva)}`} />
 
         <div className="flex items-center justify-between gap-4 pt-3 mt-1 border-t border-white/8">
           <span className="text-base font-bold text-textc">Total TTC</span>
@@ -144,8 +155,21 @@ export function CStep6Recap() {
         </div>
       </div>
 
+      {/* ── Remise ──────────────────────────────────────────── */}
+      <DiscountPanel
+        discountPercent={data.discountPercent}
+        discountReason={data.discountReason}
+        discountConditions={data.discountConditions}
+        totalHT={quote.totalHT}
+        onChangePercent={(v) => update({ discountPercent: v })}
+        onChangeReason={(v) => update({ discountReason: v })}
+        onChangeConditions={(v) => update({ discountConditions: v })}
+        onApply={() => setDiscountApplied(true)}
+        applied={discountApplied}
+      />
+
       {/* ── Actions ──────────────────────────────────────────── */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 mt-2">
         <Button
           variant="ghost"
           size="sm"

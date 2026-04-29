@@ -280,7 +280,21 @@ export function generateQuotePdf(data: ConfiguratorData, quote: LeadQuote): stri
     );
   }
 
-  totRow("Total HT",  fmt(quote.totalHT),  { bold: true });
+  totRow("Total HT", fmt(quote.totalHT), { bold: true });
+
+  if (quote.discountAmount > 0) {
+    // Ligne remise en rouge
+    const discY = y;
+    bg(doc, [254, 242, 242]); // red-50
+    doc.rect(totX - 4, discY, TOT_W + 4, 7, "F");
+    doc.setFontSize(8.5);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(185, 28, 28); // red-700
+    doc.text(`Remise –${quote.discountPercent}%`, totX, discY + 5);
+    doc.text(`– ${fmt(quote.discountAmount)}`, W - MR, discY + 5, { align: "right" });
+    y += 7;
+  }
+
   totRow("TVA 20 %",  `+ ${fmt(quote.tva)}`);
 
   hline(doc, totX - 4, y, TOT_W + 4, BLUE, 1);

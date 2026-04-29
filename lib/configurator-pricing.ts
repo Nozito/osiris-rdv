@@ -71,6 +71,7 @@ export function calcQuote(params: {
   selectedUpgrades:  string[];
   selectedUniversal: string[];
   deadlineId:        string;
+  discountPercent?:  number;
 }) {
   const basePrice       = SITE_TYPES.find(s => s.id === params.siteTypeId)?.price ?? 0;
   const extraPagesPrice = calcExtraPages(params.extraPages);
@@ -84,12 +85,17 @@ export function calcQuote(params: {
     return acc + (UNIVERSAL_OPTIONS.find(o => o.id === id)?.price ?? 0);
   }, 0);
 
-  const subtotalHT      = basePrice + extraPagesPrice + upgradesPrice + universalPrice;
-  const deadlineRate    = DEADLINES.find(d => d.id === params.deadlineId)?.rate ?? 0;
+  const subtotalHT        = basePrice + extraPagesPrice + upgradesPrice + universalPrice;
+  const deadlineRate      = DEADLINES.find(d => d.id === params.deadlineId)?.rate ?? 0;
   const deadlineSurcharge = Math.round(subtotalHT * deadlineRate);
-  const totalHT         = subtotalHT + deadlineSurcharge;
-  const tva             = Math.round(totalHT * 0.20);
-  const totalTTC        = totalHT + tva;
+  const totalHT           = subtotalHT + deadlineSurcharge;
+
+  const discountPercent      = Math.max(0, Math.min(100, params.discountPercent ?? 0));
+  const discountAmount       = Math.round(totalHT * (discountPercent / 100));
+  const totalHT_apres_remise = totalHT - discountAmount;
+
+  const tva      = Math.round(totalHT_apres_remise * 0.20);
+  const totalTTC = totalHT_apres_remise + tva;
 
   return {
     basePrice,
@@ -99,6 +105,9 @@ export function calcQuote(params: {
     subtotalHT,
     deadlineSurcharge,
     totalHT,
+    discountPercent,
+    discountAmount,
+    totalHT_apres_remise,
     tva,
     totalTTC,
   };

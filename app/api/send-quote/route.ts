@@ -1,5 +1,6 @@
 // OSIRIS CRM — pricing configurator: envoi email devis via Resend REST API (sans dépendance npm)
 import { NextResponse } from "next/server";
+import { createServerClient } from "@/lib/supabase/server";
 
 const OBJECTIVE_LABELS: Record<string, string> = {
   leads:    "Générer des leads",
@@ -115,6 +116,7 @@ function buildHtml(body: SendQuoteBody, type: "client" | "directors"): string {
                   <tr><td style="font-size:12px;color:#475569;padding:4px 0;">Sous-total HT</td><td style="font-size:12px;color:#0f172a;font-weight:600;text-align:right;">${fmt(quote.subtotalHT)}</td></tr>
                   ${quote.deadlineSurcharge > 0 ? `<tr><td style="font-size:12px;color:#475569;padding:4px 0;">Majoration délai (${quote.deadlineLabel})</td><td style="font-size:12px;color:#475569;text-align:right;">+${fmt(quote.deadlineSurcharge)}</td></tr>` : ""}
                   <tr><td style="font-size:12px;color:#475569;padding:4px 0;">Total HT</td><td style="font-size:12px;color:#0f172a;font-weight:600;text-align:right;">${fmt(quote.totalHT)}</td></tr>
+                  ${(quote.discountAmount ?? 0) > 0 ? `<tr><td style="font-size:12px;color:#dc2626;padding:4px 0;">Remise –${quote.discountPercent}%</td><td style="font-size:12px;color:#dc2626;font-weight:600;text-align:right;">–${fmt(quote.discountAmount)}</td></tr>` : ""}
                   <tr><td style="font-size:12px;color:#475569;padding:4px 0;">TVA 20 %</td><td style="font-size:12px;color:#475569;text-align:right;">+${fmt(quote.tva)}</td></tr>
                 </table>
               </td></tr>
@@ -172,7 +174,33 @@ interface SendQuoteBody {
   quote:            import("@/types").LeadQuote;
 }
 
+function validateBody(body: unknown): body is SendQuoteBody {
+  if (!body || typeof body !== "object") return false;
+  const b = body as Record<string, unknown>;
+  if (b.type !== "client" && b.type !== "directors") return false;
+  if (!Array.isArray(b.to) || b.to.some((e) => typeof e !== "string")) return false;
+  if (typeof b.clientFirstName !== "string") return false;
+  if (typeof b.clientLastName  !== "string") return false;
+  if (typeof b.clientCompany   !== "string") return false;
+  if (typeof b.clientEmail     !== "string") return false;
+  if (b.pdfBase64 !== null && typeof b.pdfBase64 !== "string") return false;
+  if (!b.quote || typeof b.quote !== "object") return false;
+  const q = b.quote as Record<string, unknown>;
+  if (typeof q.totalTTC !== "number") return false;
+  if (typeof q.totalHT  !== "number") return false;
+  if (typeof q.tva      !== "number") return false;
+  if (!Array.isArray(q.clientObjectives)) return false;
+  return true;
+}
+
 export async function POST(req: Request) {
+  // Auth guard — session Supabase requise
+  const supabase = await createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  }
+
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
@@ -181,8 +209,19 @@ export async function POST(req: Request) {
     );
   }
 
-  const body: SendQuoteBody = await req.json();
-  const { type, to, clientFirstName, clientLastName, pdfBase64, quote } = body;
+  let raw: unknown;
+  try {
+    raw = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Corps JSON invalide" }, { status: 400 });
+  }
+
+  if (!validateBody(raw)) {
+    return NextResponse.json({ error: "Données invalides" }, { status: 422 });
+  }
+
+  const body: SendQuoteBody = raw;
+  const { type, to, clientFirstName, clientLastName, pdfBase64 } = body;
 
   const name = [clientFirstName, clientLastName].filter(Boolean).join(" ") || "Client";
   const subject =
