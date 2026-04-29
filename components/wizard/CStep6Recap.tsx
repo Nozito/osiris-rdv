@@ -115,11 +115,11 @@ export function CStep6Recap() {
           </span>
         </div>
 
-        {/* OSIRIS CRM — pricing configurator: unlimited displayed separately in amber, NOT in totalTTC */}
+        {/* Maintenance mensuelle — hors totalTTC */}
         {data.wantsUnlimited && (
           <div className="flex items-center justify-between gap-4 pt-2">
-            <span className="text-sm text-amber-400/80">+ Modifications illimitées</span>
-            <span className="text-sm font-bold text-amber-400">+19,90 €/mois</span>
+            <span className="text-sm text-amber-400/80">+ Maintenance & Mises à jour</span>
+            <span className="text-sm font-bold text-amber-400">+39 €/mois</span>
           </div>
         )}
       </div>

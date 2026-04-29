@@ -2,9 +2,27 @@
 
 // ─── OFFRES DE BASE ───────────────────────────────────────────────
 export const SITE_TYPES = [
-  { id: 'vitrine-simple',   label: 'Site vitrine simple',   sublabel: '1–3 pages / landing', price: 950  },
-  { id: 'vitrine-standard', label: 'Site vitrine standard', sublabel: '3–5 pages',            price: 1650 },
-  { id: 'vitrine-premium',  label: 'Site vitrine premium',  sublabel: '6–10 pages',           price: 2950 },
+  {
+    id:       'vitrine-simple',
+    label:    'Site vitrine simple',
+    sublabel: '1–3 pages / landing',
+    price:    950,
+    features: ["1 à 3 pages", "Responsive mobile", "Formulaire de contact de base"],
+  },
+  {
+    id:       'vitrine-standard',
+    label:    'Site vitrine standard',
+    sublabel: '3–5 pages',
+    price:    1650,
+    features: ["3 à 5 pages", "Animations utiles incluses", "Socle SEO + sitemap"],
+  },
+  {
+    id:       'vitrine-premium',
+    label:    'Site vitrine premium',
+    sublabel: '6–10 pages',
+    price:    2950,
+    features: ["6 à 10 pages", "Design sur-mesure avancé", "SEO avancé + support 60 j"],
+  },
 ];
 
 // ─── UPGRADES BUSINESS (visible si vitrine-simple seulement) ──────
@@ -26,16 +44,15 @@ export const UPGRADE_EMPIRE_OPTIONS = [
 
 // ─── OPTIONS UNIVERSELLES (tous les niveaux) ──────────────────────
 export const UNIVERSAL_OPTIONS = [
-  { id: 'form',      label: 'Formulaire de contact avancé',      price: 100 },
-  { id: 'blog',      label: 'Blog / actualités',                 price: 200 },
-  { id: 'gallery',   label: 'Galerie photos/vidéos',             price: 150 },
-  { id: 'booking',   label: 'Système de réservation en ligne',   price: 350 },
-  { id: 'account',   label: 'Espace client / connexion',         price: 500 },
-  { id: 'multilang', label: 'Multi-langue (par langue ajoutée)', price: 300 },
-  { id: 'whatsapp',  label: 'Widget WhatsApp / Chat',            price: 80  },
-  { id: 'maps',      label: 'Intégration Google Maps + avis',    price: 100 },
-  { id: 'chatbot',   label: 'Chatbot IA',                        price: 400 },
-];
+  { id: 'blog',         label: 'Blog / CMS',                          sublabel: 'Articles, catégories, gestion éditoriale',    price: 200 },
+  { id: 'multilang',    label: 'Multi-langue',                        sublabel: '1 langue gratuite au choix, +25 €/langue supplémentaire', price: 0, pricePerUnit: 25 },
+  { id: 'form-multi',   label: 'Formulaire multi-étapes',             sublabel: 'Logique conditionnelle + notifications',       price: 180 },
+  { id: 'calculator',   label: 'Calculateur interactif',              sublabel: 'Outil de devis ou configurateur client',      price: 250 },
+  { id: 'gsap',         label: 'Transitions de pages GSAP',           sublabel: 'Animations fluides entre les pages',          price: 250 },
+  { id: 'scroll-horiz', label: 'Scroll horizontal',                   sublabel: 'Section ou page en scroll horizontal',       price: 300 },
+  { id: 'hero-3d',      label: 'Hero 3D Three.js',                    sublabel: "Scène interactive en page d'accueil",         price: 500 },
+  { id: 'exit-popup',   label: "Pop-up intention de sortie",          sublabel: 'Capture lead avant quitter la page',         price: 120 },
+] as const;
 
 // ─── DÉLAIS ───────────────────────────────────────────────────────
 export const DEADLINES = [
@@ -44,25 +61,13 @@ export const DEADLINES = [
   { id: 'urgent',   label: 'Urgent',   sublabel: 'Moins de 7 jours', rate: 0.45 },
 ];
 
-// Pages supplémentaires : paliers dégressifs
-// Pages 1–3 → 100€/page | Pages 4–9 → 80€/page | Pages 10+ → 60€/page
-export function calcExtraPages(n: number): number {
-  let total = 0;
-  const tiers = [
-    { up: 3,        price: 100 },
-    { up: 9,        price: 80  },
-    { up: Infinity, price: 60  },
-  ];
-  let remaining = n, pagesSeen = 0;
-  for (const tier of tiers) {
-    if (remaining <= 0) break;
-    const inTier = Math.min(remaining, tier.up - pagesSeen);
-    total += inTier * tier.price;
-    remaining -= inTier;
-    pagesSeen += inTier;
-  }
-  return total;
-}
+// Pages supplémentaires : tarif fixe
+export const EXTRA_PAGE_PRICE = 180;
+
+// Maintenance mensuelle
+export const MAINTENANCE_MONTHLY_PRICE = 39;
+export const MAINTENANCE_LABEL    = "Maintenance & Mises à jour";
+export const MAINTENANCE_SUBLABEL = "Suivi mensuel plafonné à 1h/mois";
 
 // Calcul complet du devis — TOUJOURS utiliser cette fonction
 export function calcQuote(params: {
@@ -72,17 +77,25 @@ export function calcQuote(params: {
   selectedUniversal: string[];
   deadlineId:        string;
   discountPercent?:  number;
+  multilangCount?:   number;
 }) {
   const basePrice       = SITE_TYPES.find(s => s.id === params.siteTypeId)?.price ?? 0;
-  const extraPagesPrice = calcExtraPages(params.extraPages);
+  const extraPagesPrice = params.extraPages * EXTRA_PAGE_PRICE;
 
   const allUpgradeOpts  = [...UPGRADE_BUSINESS_OPTIONS, ...UPGRADE_EMPIRE_OPTIONS];
   const upgradesPrice   = params.selectedUpgrades.reduce((acc, id) => {
     return acc + (allUpgradeOpts.find(o => o.id === id)?.price ?? 0);
   }, 0);
 
+  // multilang : inclus si dans selectedUniversal, prix = multilangCount × 25€
+  const multilangPrice  = params.selectedUniversal.includes('multilang')
+    ? Math.max(0, params.multilangCount ?? 0) * 25
+    : 0;
+
   const universalPrice  = params.selectedUniversal.reduce((acc, id) => {
-    return acc + (UNIVERSAL_OPTIONS.find(o => o.id === id)?.price ?? 0);
+    if (id === 'multilang') return acc + multilangPrice;
+    const opt = UNIVERSAL_OPTIONS.find(o => o.id === id);
+    return acc + ((opt && 'price' in opt ? (opt as { price: number }).price : 0));
   }, 0);
 
   const subtotalHT        = basePrice + extraPagesPrice + upgradesPrice + universalPrice;
@@ -102,6 +115,7 @@ export function calcQuote(params: {
     extraPagesPrice,
     upgradesPrice,
     universalPrice,
+    multilangPrice,
     subtotalHT,
     deadlineSurcharge,
     totalHT,

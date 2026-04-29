@@ -22,7 +22,7 @@ export default async function DashboardPage() {
 
   const { data: leads } = await supabase
     .from("leads")
-    .select("*")
+    .select("id,created_at,updated_at,status,client_id,client_name,client_email,client_company,client_phone,project_type,project_description,project_deadline,selected_pages,design_style,brand_assets,tech_options,budget_range,total_one_time,total_monthly,adjusted_price,notes,recommendation,quote_data,discount_percent,discount_reason,discount_conditions,discount_validated_at,discount_validated_by,rdv_date,rdv_notes,commercial_id")
     .eq("commercial_id", user.id)
     .order("updated_at", { ascending: false });
 

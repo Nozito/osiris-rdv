@@ -55,7 +55,15 @@ export function CStep1Offre() {
               <p className={`text-2xl font-black font-display ${selected ? "text-accent" : "text-textc"}`}>
                 {formatPrice(site.price)}
               </p>
-              <p className="text-[10px] text-faint mt-0.5">HT</p>
+              <p className="text-[10px] text-faint mt-0.5 mb-3">HT</p>
+              <ul className="flex flex-col gap-1">
+                {site.features.map((f) => (
+                  <li key={f} className="flex items-center gap-1.5 text-[11px] text-muted">
+                    <span className={`shrink-0 w-1 h-1 rounded-full ${selected ? "bg-accent" : "bg-faint"}`} />
+                    {f}
+                  </li>
+                ))}
+              </ul>
             </button>
           );
         })}

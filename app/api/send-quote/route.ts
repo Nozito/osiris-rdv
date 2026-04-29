@@ -111,7 +111,8 @@ function buildHtml(body: SendQuoteBody, type: "client" | "directors"): string {
                   </tr>
                   ${quote.extraPagesPrice > 0 ? `<tr><td style="font-size:12px;color:#475569;padding:4px 0;">Pages supplémentaires (×${quote.extraPages})</td><td style="font-size:12px;color:#475569;text-align:right;">+${fmt(quote.extraPagesPrice)}</td></tr>` : ""}
                   ${quote.upgradesPrice > 0 ? `<tr><td style="font-size:12px;color:#475569;padding:4px 0;">Upgrades</td><td style="font-size:12px;color:#475569;text-align:right;">+${fmt(quote.upgradesPrice)}</td></tr>` : ""}
-                  ${quote.universalPrice > 0 ? `<tr><td style="font-size:12px;color:#475569;padding:4px 0;">Options</td><td style="font-size:12px;color:#475569;text-align:right;">+${fmt(quote.universalPrice)}</td></tr>` : ""}
+                  ${quote.universalPrice > 0 ? `<tr><td style="font-size:12px;color:#475569;padding:4px 0;">Options universelles</td><td style="font-size:12px;color:#475569;text-align:right;">+${fmt(quote.universalPrice)}</td></tr>` : ""}
+                  ${quote.selectedUniversal?.includes("multilang") && (quote as { multilangPrice?: number }).multilangPrice === 0 ? `<tr><td style="font-size:12px;color:#475569;padding:4px 0;">Multi-langue (1 langue incluse)</td><td style="font-size:12px;color:#475569;text-align:right;">Gratuit</td></tr>` : ""}
                   <tr><td colspan="2" style="border-top:1px solid #e2e8f0;padding-top:8px;"></td></tr>
                   <tr><td style="font-size:12px;color:#475569;padding:4px 0;">Sous-total HT</td><td style="font-size:12px;color:#0f172a;font-weight:600;text-align:right;">${fmt(quote.subtotalHT)}</td></tr>
                   ${quote.deadlineSurcharge > 0 ? `<tr><td style="font-size:12px;color:#475569;padding:4px 0;">Majoration délai (${quote.deadlineLabel})</td><td style="font-size:12px;color:#475569;text-align:right;">+${fmt(quote.deadlineSurcharge)}</td></tr>` : ""}
@@ -136,7 +137,7 @@ function buildHtml(body: SendQuoteBody, type: "client" | "directors"): string {
                   <span style="font-size:24px;font-weight:900;color:#2563eb;">${fmt(quote.totalTTC)}</span>
                 </td>
               </tr>
-              ${quote.wantsUnlimited ? `<tr><td colspan="2" style="padding:0 24px 16px;font-size:11px;color:#fbbf24;">+ Modifications illimitées : +19,90 €/mois</td></tr>` : ""}
+              ${quote.wantsUnlimited ? `<tr><td colspan="2" style="padding:0 24px 16px;font-size:11px;color:#fbbf24;">+ Maintenance &amp; Mises à jour : +39 €/mois</td></tr>` : ""}
             </table>
           </td>
         </tr>

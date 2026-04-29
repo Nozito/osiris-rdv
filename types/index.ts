@@ -19,6 +19,7 @@ export interface LeadQuote {
   siteTypeId:        string;
   siteTypeLabel:     string;
   extraPages:        number;
+  multilangCount:    number;
   selectedUpgrades:  string[];
   selectedUniversal: string[];
   wantsUnlimited:    boolean;
@@ -30,6 +31,7 @@ export interface LeadQuote {
   extraPagesPrice:   number;
   upgradesPrice:     number;
   universalPrice:    number;
+  multilangPrice:    number;
   subtotalHT:        number;
   deadlineSurcharge: number;
   totalHT:           number;
@@ -62,6 +64,7 @@ export interface ConfiguratorData {
   clientNeeds:       string;   // texte libre
 
   // ── Pré-qualification step 3 — Budget client
+  multilangCount:    number;   // langues supplémentaires (1ère incluse)
   clientBudgetRange: string;
   clientOwnEstimate: number | null;
   clientBudgetNotes: string;
@@ -97,6 +100,7 @@ export const CONFIGURATOR_INITIAL_DATA: ConfiguratorData = {
   clientSiteUrl:      "",
   clientObjectives:   [],
   clientNeeds:        "",
+  multilangCount:     0,
   clientBudgetRange:  "",
   clientOwnEstimate:  null,
   clientBudgetNotes:  "",

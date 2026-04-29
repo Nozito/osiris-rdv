@@ -153,8 +153,9 @@ export function ConfiguratorShell({
         selectedUniversal: data.selectedUniversal,
         deadlineId:        data.deadlineId || "standard",
         discountPercent:   data.discountPercent,
+        multilangCount:    data.multilangCount,
       }),
-    [data.siteTypeId, data.extraPages, data.selectedUpgrades, data.selectedUniversal, data.deadlineId, data.discountPercent]
+    [data.siteTypeId, data.extraPages, data.selectedUpgrades, data.selectedUniversal, data.deadlineId, data.discountPercent, data.multilangCount]
   );
 
   const upsertClient = useCallback(
@@ -189,6 +190,7 @@ export function ConfiguratorShell({
           selectedUniversal: d.selectedUniversal,
           deadlineId:        d.deadlineId || "standard",
           discountPercent:   d.discountPercent,
+          multilangCount:    d.multilangCount,
         });
 
         const siteType = SITE_TYPES.find((s) => s.id === d.siteTypeId);
@@ -210,6 +212,7 @@ export function ConfiguratorShell({
           siteTypeId:        d.siteTypeId,
           siteTypeLabel:     siteType?.label ?? "",
           extraPages:        d.extraPages,
+          multilangCount:    d.multilangCount,
           selectedUpgrades:  d.selectedUpgrades,
           selectedUniversal: d.selectedUniversal,
           wantsUnlimited:    d.wantsUnlimited,
@@ -635,23 +638,23 @@ export function ConfiguratorShell({
             ) : (
               <motion.div key="nav" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 className="max-w-[1200px] mx-auto px-4 py-3 flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={prev} disabled={currentStep === 0} icon={<ChevronLeft size={15} />}>
+                <Button variant="ghost" size="sm" onClick={prev} disabled={currentStep === 0} icon={<ChevronLeft size={15} />} className="min-h-[44px]">
                   <span className="hidden sm:inline">Précédent</span>
                 </Button>
 
                 {existingLeadId && (
                   <button onClick={() => setDeleteConfirm(true)}
-                    className="p-2 rounded-[10px] text-faint hover:text-danger hover:bg-danger/8 transition-all" title="Supprimer ce lead">
+                    className="min-h-[44px] px-2 rounded-[10px] text-faint hover:text-danger hover:bg-danger/8 transition-all" title="Supprimer ce lead">
                     <Trash2 size={15} />
                   </button>
                 )}
 
-                {/* BLOC 4.4 — Price pill sticky mobile (phase devis uniquement) */}
+                {/* Price pill sticky mobile (phase devis uniquement) */}
                 {currentPhase === "devis" && quote.totalTTC > 0 && (
                   <motion.div
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    className="sm:hidden flex items-center gap-1.5 h-8 px-3 rounded-[10px] bg-accent/10 border border-accent/25"
+                    className="sm:hidden flex items-center gap-1.5 h-9 px-3 rounded-[10px] bg-accent/10 border border-accent/25"
                   >
                     <Coins size={12} className="text-accent" />
                     <AnimatedPrice
@@ -664,12 +667,12 @@ export function ConfiguratorShell({
 
                 <div className="flex-1" />
 
-                <Button variant="secondary" size="sm" loading={saving} onClick={() => triggerSave(data, leadId)} icon={<Save size={13} />}>
+                <Button variant="secondary" size="sm" loading={saving} onClick={() => triggerSave(data, leadId)} icon={<Save size={13} />} className="min-h-[44px]">
                   <span className="hidden sm:inline">Sauvegarder</span>
                 </Button>
 
                 {currentStep < STEPS.length - 1 && (
-                  <Button variant="primary" size="sm" onClick={next} iconRight={<ChevronRight size={15} />}>
+                  <Button variant="primary" size="sm" onClick={next} iconRight={<ChevronRight size={15} />} className="min-h-[44px]">
                     Suivant
                   </Button>
                 )}

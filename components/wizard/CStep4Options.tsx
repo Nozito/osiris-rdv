@@ -1,93 +1,148 @@
 "use client";
 // OSIRIS CRM — pricing configurator
 
-import { Check, Repeat } from "lucide-react";
+import { Check, Repeat, Minus, Plus } from "lucide-react";
 import { useConfigurator } from "./ConfiguratorShell";
-import { UNIVERSAL_OPTIONS } from "@/lib/configurator-pricing";
+import {
+  UNIVERSAL_OPTIONS,
+  MAINTENANCE_LABEL,
+  MAINTENANCE_SUBLABEL,
+  MAINTENANCE_MONTHLY_PRICE,
+} from "@/lib/configurator-pricing";
 import { formatPrice } from "@/lib/pricing";
+
+// Catégories visuelles
+const CATEGORIES: { label: string; ids: string[] }[] = [
+  { label: "Fonctionnalités",       ids: ["blog", "form-multi", "calculator", "exit-popup"] },
+  { label: "Expérience visuelle",   ids: ["gsap", "scroll-horiz", "hero-3d"] },
+  { label: "Langues & Support",     ids: ["multilang"] },
+];
 
 export function CStep4Options() {
   const { data, update } = useConfigurator();
-  const { selectedUniversal, wantsUnlimited } = data;
+  const { selectedUniversal, wantsUnlimited, multilangCount } = data;
 
   const toggle = (id: string) => {
-    update({
-      selectedUniversal: selectedUniversal.includes(id)
-        ? selectedUniversal.filter((u) => u !== id)
-        : [...selectedUniversal, id],
-    });
+    const next = selectedUniversal.includes(id)
+      ? selectedUniversal.filter((u) => u !== id)
+      : [...selectedUniversal, id];
+    // Si on désactive multilang → reset le compteur
+    const patch: Parameters<typeof update>[0] = { selectedUniversal: next };
+    if (id === "multilang" && selectedUniversal.includes(id)) patch.multilangCount = 0;
+    update(patch);
   };
+
+  const setMultilangCount = (n: number) =>
+    update({ multilangCount: Math.max(0, Math.min(10, n)) });
 
   return (
     <div className="py-4">
       <h2 className="text-lg font-bold text-textc font-display mb-1">Options universelles</h2>
       <p className="text-sm text-muted mb-6">Ces options sont disponibles pour toutes les offres.</p>
 
-      {/* 9 universal options grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-6">
-        {UNIVERSAL_OPTIONS.map((opt) => {
-          const selected = selectedUniversal.includes(opt.id);
-          return (
-            <button
-              key={opt.id}
-              onClick={() => toggle(opt.id)}
-              className={`
-                flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all duration-150
-                ${selected
-                  ? "border-accent/40 bg-accent/8"
-                  : "border-white/8 bg-surface hover:border-white/20 hover:bg-surface2"
-                }
-              `}
-            >
-              <div
-                className={`
-                  w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-all
-                  ${selected ? "bg-accent border-accent" : "border-white/20 bg-surface2"}
-                `}
-              >
-                {selected && <Check size={11} className="text-white" />}
-              </div>
-              <span className={`flex-1 text-sm ${selected ? "text-textc font-medium" : "text-muted"}`}>
-                {opt.label}
-              </span>
-              <span className={`text-sm font-semibold shrink-0 ${selected ? "text-accent" : "text-textc"}`}>
-                +{formatPrice(opt.price)}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      {CATEGORIES.map((cat) => (
+        <div key={cat.label} className="mb-6">
+          <p className="text-[10px] font-bold text-faint uppercase tracking-widest mb-3">{cat.label}</p>
+          <div className="flex flex-col gap-2">
+            {cat.ids.map((id) => {
+              const opt = UNIVERSAL_OPTIONS.find((o) => o.id === id);
+              if (!opt) return null;
+              const selected = selectedUniversal.includes(id);
+              const isMultilang = id === "multilang";
 
-      {/* OSIRIS CRM — pricing configurator: Modifications illimitées — NOT in calcQuote, displayed separately in amber */}
-      <button
-        onClick={() => update({ wantsUnlimited: !wantsUnlimited })}
-        className={`
-          w-full flex items-center gap-3 px-4 py-4 rounded-xl border text-left transition-all duration-150
-          ${wantsUnlimited
-            ? "border-amber-400/40 bg-amber-400/8"
-            : "border-white/8 bg-surface hover:border-amber-400/20 hover:bg-surface2"
-          }
-        `}
-      >
-        <div
+              return (
+                <div key={id} className={`rounded-xl border transition-all duration-150 ${selected ? "border-accent/40 bg-accent/8" : "border-white/8 bg-surface hover:border-white/20 hover:bg-surface2"}`}>
+                  <button
+                    onClick={() => toggle(id)}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left"
+                  >
+                    <div className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-all ${selected ? "bg-accent border-accent" : "border-white/20 bg-surface2"}`}>
+                      {selected && <Check size={11} className="text-white" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-medium ${selected ? "text-textc" : "text-muted"}`}>
+                        {opt.label}
+                      </p>
+                      {"sublabel" in opt && opt.sublabel && (
+                        <p className="text-xs text-faint mt-0.5">{opt.sublabel}</p>
+                      )}
+                    </div>
+                    <span className={`text-sm font-semibold shrink-0 ${selected ? "text-accent" : "text-textc"}`}>
+                      {isMultilang
+                        ? (selected && multilangCount > 0
+                          ? `+${formatPrice(multilangCount * 25)}`
+                          : "Gratuit")
+                        : ("price" in opt ? `+${formatPrice((opt as { price: number }).price)}` : "")}
+                    </span>
+                  </button>
+
+                  {/* Compteur de langues supplémentaires */}
+                  {isMultilang && selected && (
+                    <div className="px-4 pb-3 flex items-center gap-3 border-t border-white/8 pt-3">
+                      <p className="text-xs text-muted flex-1">
+                        1 langue incluse
+                        {multilangCount > 0 && (
+                          <span className="text-accent ml-1">
+                            + {multilangCount} langue{multilangCount > 1 ? "s" : ""} × 25 €
+                          </span>
+                        )}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setMultilangCount(multilangCount - 1)}
+                          disabled={multilangCount === 0}
+                          className="w-7 h-7 rounded-lg border border-white/8 bg-surface2 flex items-center justify-center text-textc hover:border-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                        >
+                          <Minus size={11} />
+                        </button>
+                        <span className="text-sm font-bold text-textc w-4 text-center tabular-nums">
+                          {multilangCount}
+                        </span>
+                        <button
+                          onClick={() => setMultilangCount(multilangCount + 1)}
+                          disabled={multilangCount === 10}
+                          className="w-7 h-7 rounded-lg border border-white/8 bg-surface2 flex items-center justify-center text-textc hover:border-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                        >
+                          <Plus size={11} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+
+      {/* Maintenance mensuelle (wantsUnlimited conservé comme champ) */}
+      <div className="mb-2">
+        <p className="text-[10px] font-bold text-faint uppercase tracking-widest mb-3">Maintenance</p>
+        <button
+          onClick={() => update({ wantsUnlimited: !wantsUnlimited })}
           className={`
-            w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-all
-            ${wantsUnlimited ? "bg-amber-400 border-amber-400" : "border-white/20 bg-surface2"}
+            w-full flex items-center gap-3 px-4 py-4 rounded-xl border text-left transition-all duration-150
+            ${wantsUnlimited
+              ? "border-amber-400/40 bg-amber-400/8"
+              : "border-white/8 bg-surface hover:border-amber-400/20 hover:bg-surface2"
+            }
           `}
         >
-          {wantsUnlimited && <Check size={11} className="text-black" />}
-        </div>
-        <Repeat size={14} className={wantsUnlimited ? "text-amber-400 shrink-0" : "text-faint shrink-0"} />
-        <div className="flex-1 min-w-0">
-          <p className={`text-sm font-medium ${wantsUnlimited ? "text-amber-300" : "text-muted"}`}>
-            Modifications illimitées
-          </p>
-          <p className="text-xs text-faint mt-0.5">Jusqu'à mise en ligne — abonnement mensuel</p>
-        </div>
-        <span className={`text-sm font-bold shrink-0 ${wantsUnlimited ? "text-amber-400" : "text-textc"}`}>
-          +19,90 €/mois
-        </span>
-      </button>
+          <div className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-all ${wantsUnlimited ? "bg-amber-400 border-amber-400" : "border-white/20 bg-surface2"}`}>
+            {wantsUnlimited && <Check size={11} className="text-black" />}
+          </div>
+          <Repeat size={14} className={wantsUnlimited ? "text-amber-400 shrink-0" : "text-faint shrink-0"} />
+          <div className="flex-1 min-w-0">
+            <p className={`text-sm font-medium ${wantsUnlimited ? "text-amber-300" : "text-muted"}`}>
+              {MAINTENANCE_LABEL}
+            </p>
+            <p className="text-xs text-faint mt-0.5">{MAINTENANCE_SUBLABEL}</p>
+          </div>
+          <span className={`text-sm font-bold shrink-0 ${wantsUnlimited ? "text-amber-400" : "text-textc"}`}>
+            +{MAINTENANCE_MONTHLY_PRICE} €/mois
+          </span>
+        </button>
+      </div>
     </div>
   );
 }

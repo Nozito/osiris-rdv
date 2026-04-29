@@ -150,6 +150,7 @@ export function FStep1Envoi() {
       siteTypeId:        data.siteTypeId,
       siteTypeLabel:     siteType?.label ?? "",
       extraPages:        data.extraPages,
+      multilangCount:    data.multilangCount,
       selectedUpgrades:  data.selectedUpgrades,
       selectedUniversal: data.selectedUniversal,
       wantsUnlimited:    data.wantsUnlimited,
@@ -186,6 +187,7 @@ export function FStep1Envoi() {
         siteTypeId:        data.siteTypeId,
         siteTypeLabel:     siteType?.label ?? "",
         extraPages:        data.extraPages,
+        multilangCount:    data.multilangCount,
         selectedUpgrades:  data.selectedUpgrades,
         selectedUniversal: data.selectedUniversal,
         wantsUnlimited:    data.wantsUnlimited,
@@ -311,7 +313,15 @@ export function FStep1Envoi() {
           })}
           {data.selectedUniversal.map((id) => {
             const opt = UNIVERSAL_OPTIONS.find((o) => o.id === id);
-            return opt ? <PriceRow key={id} label={opt.label} value={"+" + fmt(opt.price)} /> : null;
+            if (!opt) return null;
+            if (id === "multilang") {
+              const mlPrice = (data.multilangCount ?? 0) * 25;
+              const label = data.multilangCount > 0
+                ? `Multi-langue (${data.multilangCount} langue${data.multilangCount > 1 ? "s" : ""} supp.)`
+                : "Multi-langue (1 langue incluse)";
+              return <PriceRow key={id} label={label} value={mlPrice > 0 ? "+" + fmt(mlPrice) : "Gratuit"} />;
+            }
+            return <PriceRow key={id} label={opt.label} value={"+" + fmt("price" in opt ? (opt as { price: number }).price : 0)} />;
           })}
 
           <PriceRow label="Sous-total HT" value={fmt(quote.subtotalHT)} bold />
@@ -338,7 +348,7 @@ export function FStep1Envoi() {
 
           {data.wantsUnlimited && (
             <p className="text-[10px] text-amber-400 mt-2 text-right">
-              + Modifications illimitées : +19,90 €/mois
+              + Maintenance & Mises à jour : +39 €/mois
             </p>
           )}
         </div>
@@ -347,7 +357,7 @@ export function FStep1Envoi() {
       {/* ── Actions */}
       <div className="rounded-xl border border-white/8 bg-surface p-4">
         <p className="text-xs font-semibold text-textc mb-3">Actions</p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-2">
 
           {/* Télécharger PDF */}
           <Button
@@ -355,6 +365,7 @@ export function FStep1Envoi() {
             size="sm"
             onClick={generateAndDownload}
             icon={<Download size={13} />}
+            className="w-full sm:w-auto min-h-[44px]"
           >
             Télécharger le PDF
           </Button>
@@ -366,6 +377,7 @@ export function FStep1Envoi() {
               size="sm"
               onClick={downloadCalendar}
               icon={<Calendar size={13} />}
+              className="w-full sm:w-auto min-h-[44px]"
             >
               Ajouter au calendrier
             </Button>
@@ -379,6 +391,7 @@ export function FStep1Envoi() {
             disabled={sentClient || !data.clientEmail}
             onClick={() => sendEmail("client")}
             icon={sentClient ? <CheckCircle size={13} /> : <Send size={13} />}
+            className="w-full sm:w-auto min-h-[44px]"
           >
             {sentClient ? "Envoyé au client" : "Envoyer au client"}
           </Button>
@@ -391,6 +404,7 @@ export function FStep1Envoi() {
             disabled={sentDirectors}
             onClick={() => sendEmail("directors")}
             icon={sentDirectors ? <CheckCircle size={13} /> : <Users size={13} />}
+            className="w-full sm:w-auto min-h-[44px]"
           >
             {sentDirectors ? "Envoyé aux directeurs" : "Envoyer aux directeurs"}
           </Button>

@@ -178,8 +178,7 @@ export function generateQuotePdf(data: ConfiguratorData, quote: LeadQuote): stri
   items.push({ label: siteType?.label ?? data.siteTypeId, qty: 1, pu: quote.basePrice, total: quote.basePrice });
 
   if (quote.extraPagesPrice > 0 && data.extraPages > 0) {
-    const pprice = Math.round(quote.extraPagesPrice / data.extraPages);
-    items.push({ label: "Pages supplémentaires", qty: data.extraPages, pu: pprice, total: quote.extraPagesPrice });
+    items.push({ label: "Pages supplémentaires", qty: data.extraPages, pu: 180, total: quote.extraPagesPrice });
   }
 
   data.selectedUpgrades.forEach((id) => {
@@ -188,8 +187,18 @@ export function generateQuotePdf(data: ConfiguratorData, quote: LeadQuote): stri
   });
 
   data.selectedUniversal.forEach((id) => {
+    if (id === "multilang") {
+      const count = (data as import("@/types").ConfiguratorData).multilangCount ?? 0;
+      const total = count * 25;
+      if (count > 0) {
+        items.push({ label: `Multi-langue (${count} langue${count > 1 ? "s" : ""} supplémentaire${count > 1 ? "s" : ""})`, qty: count, pu: 25, total });
+      } else {
+        items.push({ label: "Multi-langue (1 langue incluse)", qty: 1, pu: 0, total: 0 });
+      }
+      return;
+    }
     const opt = UNIVERSAL_OPTIONS.find((o) => o.id === id);
-    if (opt) items.push({ label: opt.label, qty: 1, pu: opt.price, total: opt.price });
+    if (opt && "price" in opt) items.push({ label: opt.label, qty: 1, pu: (opt as { price: number }).price, total: (opt as { price: number }).price });
   });
 
   const ROW_H = 8;
@@ -228,11 +237,11 @@ export function generateQuotePdf(data: ConfiguratorData, quote: LeadQuote): stri
     doc.setFontSize(8.5);
     doc.setFont("helvetica", "normal");
     c(doc, [146, 64, 14]);
-    doc.text("Modifications illimitées (abonnement mensuel)", COL.desc, y + 5.3);
-    doc.text("1",             COL.qty, y + 5.3, { align: "center" });
-    doc.text("19,90 €/mois",  COL.pu,  y + 5.3, { align: "center" });
+    doc.text("Maintenance & Mises à jour (abonnement mensuel)", COL.desc, y + 5.3);
+    doc.text("1",          COL.qty, y + 5.3, { align: "center" });
+    doc.text("39 €/mois",  COL.pu,  y + 5.3, { align: "center" });
     doc.setFont("helvetica", "bold");
-    doc.text("+ 19,90 €/mois", COL.tot, y + 5.3, { align: "right" });
+    doc.text("+ 39 €/mois", COL.tot, y + 5.3, { align: "right" });
     y += ROW_H;
   }
 
@@ -323,7 +332,7 @@ export function generateQuotePdf(data: ConfiguratorData, quote: LeadQuote): stri
     doc.text("• 70 % à la livraison finale du projet",   ML + 4, cy); cy += 5;
     if (data.wantsUnlimited) {
       c(doc, [146, 64, 14]);
-      doc.text("• Abonnement modifications illimitées : 19,90 €/mois (résiliable à tout moment)", ML + 4, cy);
+      doc.text("• Maintenance & Mises à jour : 39 €/mois (résiliable à tout moment)", ML + 4, cy);
     }
 
     y += (data.wantsUnlimited ? 28 : 22) + 6;

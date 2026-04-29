@@ -73,6 +73,7 @@ function leadToConfiguratorData(lead: Lead): Partial<ConfiguratorData> {
       // Configurateur
       siteTypeId:        qd.siteTypeId,
       extraPages:        qd.extraPages,
+      multilangCount:    qd.multilangCount ?? 0,
       selectedUpgrades:  qd.selectedUpgrades,
       selectedUniversal: qd.selectedUniversal,
       wantsUnlimited:    qd.wantsUnlimited,
