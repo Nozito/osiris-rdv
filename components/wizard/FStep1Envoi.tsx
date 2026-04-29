@@ -338,11 +338,10 @@ export function FStep1Envoi() {
               <span className="text-xs font-semibold text-red-400">–{fmt(quote.discountAmount)}</span>
             </div>
           )}
-          <PriceRow label="TVA 20 %" value={"+" + fmt(quote.tva)} />
 
-          {/* TTC */}
+          {/* Total HT final */}
           <div className="mt-3 rounded-xl bg-surface2 border border-white/8 px-4 py-3 flex items-center justify-between">
-            <span className="text-sm font-semibold text-textc">Total TTC</span>
+            <span className="text-sm font-semibold text-textc">Total HT</span>
             <span className="text-xl font-black text-accent font-display">{fmt(quote.totalTTC)}</span>
           </div>
 

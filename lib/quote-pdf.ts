@@ -304,11 +304,9 @@ export function generateQuotePdf(data: ConfiguratorData, quote: LeadQuote): stri
     y += 7;
   }
 
-  totRow("TVA 20 %",  `+ ${fmt(quote.tva)}`);
-
   hline(doc, totX - 4, y, TOT_W + 4, BLUE, 1);
   y += 2;
-  totRow("TOTAL TTC", fmt(quote.totalTTC), { big: true, accent: true });
+  totRow("TOTAL HT", fmt(quote.totalTTC), { big: true, accent: true });
 
   y += 8;
 
@@ -317,7 +315,7 @@ export function generateQuotePdf(data: ConfiguratorData, quote: LeadQuote): stri
   // ══════════════════════════════════════════════════════════
   if (y < 235) {
     bg(doc, LIGHTER);
-    doc.rect(ML, y, CW, data.wantsUnlimited ? 28 : 22, "F");
+    doc.rect(ML, y, CW, data.wantsUnlimited ? 26 : 20, "F");
 
     doc.setFontSize(7);
     doc.setFont("helvetica", "bold");
@@ -335,7 +333,7 @@ export function generateQuotePdf(data: ConfiguratorData, quote: LeadQuote): stri
       doc.text("• Maintenance & Mises à jour : 39 €/mois (résiliable à tout moment)", ML + 4, cy);
     }
 
-    y += (data.wantsUnlimited ? 28 : 22) + 6;
+    y += (data.wantsUnlimited ? 26 : 20) + 6;
   }
 
   // Validité

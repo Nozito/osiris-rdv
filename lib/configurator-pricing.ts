@@ -62,7 +62,7 @@ export const DEADLINES = [
 ];
 
 // Pages supplémentaires : tarif fixe
-export const EXTRA_PAGE_PRICE = 180;
+export const EXTRA_PAGE_PRICE = 100;
 
 // Maintenance mensuelle
 export const MAINTENANCE_MONTHLY_PRICE = 39;
@@ -107,8 +107,8 @@ export function calcQuote(params: {
   const discountAmount       = Math.round(totalHT * (discountPercent / 100));
   const totalHT_apres_remise = totalHT - discountAmount;
 
-  const tva      = Math.round(totalHT_apres_remise * 0.20);
-  const totalTTC = totalHT_apres_remise + tva;
+  const tva      = 0;
+  const totalTTC = totalHT_apres_remise;
 
   return {
     basePrice,

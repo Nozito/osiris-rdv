@@ -259,7 +259,7 @@ export function ConfiguratorShell({
           const updatePayload = statusOverride ? { ...payload, status: statusOverride } : payload;
           const { error } = await supabase.from("leads").update(updatePayload).eq("id", id);
           if (error) {
-            console.error("[saveToSupabase] update error:", error);
+            console.error("[saveToSupabase] update error:", error.message, error.code, error.details);
             // Retry without quote_data if column is missing
             if (error.code === "42703" || error.message?.includes("quote_data")) {
               const { quote_data: _, ...payloadFallback } = payload;
@@ -275,7 +275,7 @@ export function ConfiguratorShell({
           const { data: ins, error } = await supabase
             .from("leads").insert({ ...payload, status: insertStatus }).select("id").single();
           if (error) {
-            console.error("[saveToSupabase] insert error:", error);
+            console.error("[saveToSupabase] insert error:", error.message, error.code, error.details);
             // Retry without quote_data if column is missing
             if (error.code === "42703" || error.message?.includes("quote_data")) {
               const { quote_data: _, ...payloadFallback } = payload;

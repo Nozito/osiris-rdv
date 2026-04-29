@@ -118,7 +118,6 @@ function buildHtml(body: SendQuoteBody, type: "client" | "directors"): string {
                   ${quote.deadlineSurcharge > 0 ? `<tr><td style="font-size:12px;color:#475569;padding:4px 0;">Majoration délai (${quote.deadlineLabel})</td><td style="font-size:12px;color:#475569;text-align:right;">+${fmt(quote.deadlineSurcharge)}</td></tr>` : ""}
                   <tr><td style="font-size:12px;color:#475569;padding:4px 0;">Total HT</td><td style="font-size:12px;color:#0f172a;font-weight:600;text-align:right;">${fmt(quote.totalHT)}</td></tr>
                   ${(quote.discountAmount ?? 0) > 0 ? `<tr><td style="font-size:12px;color:#dc2626;padding:4px 0;">Remise –${quote.discountPercent}%</td><td style="font-size:12px;color:#dc2626;font-weight:600;text-align:right;">–${fmt(quote.discountAmount)}</td></tr>` : ""}
-                  <tr><td style="font-size:12px;color:#475569;padding:4px 0;">TVA 20 %</td><td style="font-size:12px;color:#475569;text-align:right;">+${fmt(quote.tva)}</td></tr>
                 </table>
               </td></tr>
             </table>
@@ -131,7 +130,7 @@ function buildHtml(body: SendQuoteBody, type: "client" | "directors"): string {
             <table width="100%" cellpadding="0" cellspacing="0" style="background:#08081a;border-radius:8px;">
               <tr>
                 <td style="padding:20px 24px;">
-                  <span style="font-size:12px;color:#94a3b8;">Total TTC</span>
+                  <span style="font-size:12px;color:#94a3b8;">Total HT</span>
                 </td>
                 <td align="right" style="padding:20px 24px;">
                   <span style="font-size:24px;font-weight:900;color:#2563eb;">${fmt(quote.totalTTC)}</span>

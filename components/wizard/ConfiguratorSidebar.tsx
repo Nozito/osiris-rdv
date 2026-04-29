@@ -30,7 +30,16 @@ export function ConfiguratorSidebar() {
   });
   data.selectedUniversal.forEach((id) => {
     const opt = UNIVERSAL_OPTIONS.find((o) => o.id === id);
-    if (opt) lineItems.push({ label: opt.label, price: opt.price });
+    if (!opt) return;
+    if (id === "multilang") {
+      const mlPrice = (data.multilangCount ?? 0) * 25;
+      const mlLabel = (data.multilangCount ?? 0) > 0
+        ? `Multi-langue (${data.multilangCount} supp.)`
+        : "Multi-langue (1 incluse)";
+      lineItems.push({ label: mlLabel, price: mlPrice });
+    } else {
+      lineItems.push({ label: opt.label, price: (opt as { price: number }).price });
+    }
   });
 
   const clientName = [data.clientFirstName, data.clientLastName].filter(Boolean).join(" ");
@@ -95,7 +104,7 @@ export function ConfiguratorSidebar() {
                 </div>
               )}
               <div className="flex items-baseline justify-between mt-1 pt-1 border-t border-white/8">
-                <span className="text-xs text-muted">Total TTC</span>
+                <span className="text-xs text-muted">Total HT</span>
                 <AnimatedPrice
                   value={quote.totalTTC}
                   suffix=" €"
@@ -103,7 +112,7 @@ export function ConfiguratorSidebar() {
                 />
               </div>
               {data.wantsUnlimited && (
-                <p className="text-[10px] text-amber-400">+19,90 €/mois</p>
+                <p className="text-[10px] text-amber-400">+39 €/mois (maintenance)</p>
               )}
             </div>
           )}
@@ -168,14 +177,14 @@ export function ConfiguratorSidebar() {
               )}
 
               <div className="mt-4 pt-4 border-t border-white/10">
-                <p className="text-sm text-muted mb-1">Total TTC</p>
+                <p className="text-sm text-muted mb-1">Total HT</p>
                 <AnimatedPrice
                   value={quote.totalTTC}
                   suffix=" €"
                   className="text-6xl font-black text-accent font-display"
                 />
                 {data.wantsUnlimited && (
-                  <p className="text-sm text-amber-400 mt-2">+ 19,90 €/mois (modifications illimitées)</p>
+                  <p className="text-sm text-amber-400 mt-2">+39 €/mois (maintenance)</p>
                 )}
               </div>
             </div>

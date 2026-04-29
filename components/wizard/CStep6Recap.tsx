@@ -106,10 +106,8 @@ export function CStep6Recap() {
           </div>
         )}
 
-        <Line label="TVA 20 %" value={`+${fmt(quote.tva)}`} />
-
         <div className="flex items-center justify-between gap-4 pt-3 mt-1 border-t border-white/8">
-          <span className="text-base font-bold text-textc">Total TTC</span>
+          <span className="text-base font-bold text-textc">Total HT</span>
           <span className="text-2xl font-black text-textc font-display">
             {fmt(quote.totalTTC)}
           </span>
