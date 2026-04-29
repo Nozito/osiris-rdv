@@ -9,6 +9,8 @@ import { LeadListClient } from "@/components/LeadListClient";
 import { LeadPipeline } from "@/components/LeadPipeline";
 import type { Lead } from "@/types";
 import { TrendingUp, Users, DollarSign, Clock } from "lucide-react";
+import { QuickAddLead } from "@/components/QuickAddLead";
+import Link from "next/link";
 
 export default async function DashboardPage() {
   const supabase = await createServerClient();
@@ -50,6 +52,20 @@ export default async function DashboardPage() {
   return (
     <div className="min-h-screen">
       <main className="max-w-6xl mx-auto px-4 py-5">
+        {/* Header row */}
+        <div className="flex items-center justify-between mb-5">
+          <h1 className="text-base font-semibold text-textc">Dashboard</h1>
+          <div className="flex items-center gap-2 flex-wrap">
+            <QuickAddLead />
+            <Link
+              href="/rdv/nouveau"
+              className="flex items-center gap-1.5 h-8 px-3 rounded-[10px] bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-colors"
+            >
+              + Nouveau RDV
+            </Link>
+          </div>
+        </div>
+
         {/* OSIRIS UX — KPI cards animés */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
           <KpiCard label="Total leads" value={stats.total}   icon={<Users size={16} />}      format="number" />
