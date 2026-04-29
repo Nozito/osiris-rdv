@@ -22,6 +22,12 @@ export default function RootLayout({
           rel="stylesheet"
           href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&f[]=satoshi@300,400,500,700&display=swap"
         />
+        {/* PWA */}
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#08081a" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
       </head>
       <body className="min-h-full flex flex-col antialiased">
         {children}
