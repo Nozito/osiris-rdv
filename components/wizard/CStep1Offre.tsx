@@ -36,8 +36,9 @@ export function CStep1Offre() {
               onClick={() => handleSelect(site.id)}
               className={`
                 relative text-left p-5 rounded-xl border transition-all duration-150
+                hover:scale-[1.02] active:scale-[0.97]
                 ${selected
-                  ? "border-accent/50 bg-accent/8 shadow-[0_0_20px_-4px_rgba(37,99,235,0.2)]"
+                  ? "border-accent/50 bg-accent/8 shadow-[0_0_0_1px_rgba(37,99,235,0.3),0_0_20px_-4px_rgba(37,99,235,0.2)]"
                   : "border-white/8 bg-surface hover:border-white/20 hover:bg-surface2"
                 }
               `}

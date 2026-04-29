@@ -2,6 +2,7 @@
 // OSIRIS CRM — pricing configurator: pré-qualification — profil client
 
 import { useConfigurator } from "./ConfiguratorShell";
+import { FloatingInput } from "@/components/ui/FloatingInput";
 
 const INDUSTRIES = [
   "Artisanat / BTP",
@@ -59,12 +60,24 @@ export function QStep1Profil() {
       <div className="rounded-xl border border-white/8 bg-surface p-5 mb-4">
         <p className="text-xs font-bold text-muted uppercase tracking-wider mb-3">Contact</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {field("clientFirstName", "Prénom",    "Jean"              )}
-          {field("clientLastName",  "Nom",       "Dupont"            )}
-          {field("clientCompany",   "Entreprise","Acme SAS"          )}
-          {field("clientPhone",     "Téléphone", "+33 6 00 00 00 00", "tel"   )}
+          {field("clientFirstName", "Prénom",    "Jean"     )}
+          {field("clientLastName",  "Nom",       "Dupont"   )}
+          {field("clientCompany",   "Entreprise","Acme SAS" )}
+          <FloatingInput
+            label="Téléphone"
+            type="tel"
+            value={data.clientPhone}
+            onChange={(v) => update({ clientPhone: v })}
+            placeholder="+33 6 00 00 00 00"
+          />
           <div className="sm:col-span-2">
-            {field("clientEmail", "Email", "jean@acme.fr", "email")}
+            <FloatingInput
+              label="Email"
+              type="email"
+              value={data.clientEmail}
+              onChange={(v) => update({ clientEmail: v })}
+              placeholder="jean@acme.fr"
+            />
           </div>
         </div>
       </div>
@@ -80,9 +93,10 @@ export function QStep1Profil() {
               className={`
                 text-left px-3 py-2 rounded-lg border text-xs transition-all
                 ${data.clientIndustry === ind
-                  ? "border-accent/50 bg-accent/8 text-accent font-medium"
+                  ? "border-accent/50 bg-accent/8 text-accent font-medium shadow-[0_0_0_1px_rgba(37,99,235,0.3)]"
                   : "border-white/8 bg-surface2 text-muted hover:border-white/20 hover:text-textc"
                 }
+                hover:scale-[1.02] active:scale-[0.97]
               `}
             >
               {ind}
@@ -102,9 +116,10 @@ export function QStep1Profil() {
               className={`
                 px-3 py-2 rounded-lg border text-xs transition-all
                 ${data.clientCompanySize === s.id
-                  ? "border-accent/50 bg-accent/8 text-accent font-medium"
+                  ? "border-accent/50 bg-accent/8 text-accent font-medium shadow-[0_0_0_1px_rgba(37,99,235,0.3)]"
                   : "border-white/8 bg-surface2 text-muted hover:border-white/20 hover:text-textc"
                 }
+                hover:scale-[1.02] active:scale-[0.97]
               `}
             >
               {s.label}
@@ -124,9 +139,10 @@ export function QStep1Profil() {
               className={`
                 text-left px-4 py-3 rounded-xl border text-sm transition-all
                 ${data.clientCurrentSite === opt.id
-                  ? "border-accent/50 bg-accent/8 text-accent font-medium"
+                  ? "border-accent/50 bg-accent/8 text-accent font-medium shadow-[0_0_0_1px_rgba(37,99,235,0.3)]"
                   : "border-white/8 bg-surface2 text-muted hover:border-white/20 hover:text-textc"
                 }
+                hover:scale-[1.02] active:scale-[0.97]
               `}
             >
               {opt.label}

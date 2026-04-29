@@ -225,6 +225,26 @@ textarea:focus-visible {
 /* Touch: supprime le highlight bleu sur mobile */
 * { -webkit-tap-highlight-color: transparent; }
 
+/* BLOC 4.3 — Dot ✓ animation quand step complété */
+@keyframes dotComplete {
+  0%   { transform: scale(0); opacity: 0; }
+  60%  { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.dot-complete {
+  animation: dotComplete 0.35s ease-out both;
+}
+
+/* BLOC 4.4 — Pulse du price pill mobile */
+@keyframes pricePulse {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+.price-pulse {
+  animation: pricePulse 0.4s ease-in-out;
+}
+
 /* ============================================================
    OSIRIS UX — Reduced motion: disable all animations
    ============================================================ */
