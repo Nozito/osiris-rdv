@@ -8,7 +8,7 @@ import { KpiCard } from "@/components/ui/KpiCard";
 import { LeadListClient } from "@/components/LeadListClient";
 import { LeadPipeline } from "@/components/LeadPipeline";
 import type { Lead } from "@/types";
-import { TrendingUp, Users, DollarSign, Clock } from "lucide-react";
+import { TrendingUp, Users, DollarSign, Clock, Target } from "lucide-react";
 import { QuickAddLead } from "@/components/QuickAddLead";
 import Link from "next/link";
 
@@ -35,11 +35,16 @@ export default async function DashboardPage() {
   const byStatus = (status: string) => allLeads.filter((l) => l.status === status);
   const sumValue  = (arr: Lead[]) => arr.reduce((s, l) => s + dealValue(l), 0);
 
+  const conversionRate = allLeads.length > 0
+    ? Math.round((byStatus("signed").length / allLeads.length) * 100)
+    : 0;
+
   const stats = {
-    total:   allLeads.length,
-    signed:  byStatus("signed").length,
-    revenue: sumValue(byStatus("signed")),
-    pending: byStatus("sent").length,
+    total:      allLeads.length,
+    signed:     byStatus("signed").length,
+    revenue:    sumValue(byStatus("signed")),
+    pending:    byStatus("sent").length,
+    conversion: conversionRate,
   };
 
   const pipeline = {
@@ -67,11 +72,14 @@ export default async function DashboardPage() {
         </div>
 
         {/* OSIRIS UX — KPI cards animés */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-          <KpiCard label="Total leads" value={stats.total}   icon={<Users size={16} />}      format="number" />
-          <KpiCard label="Envoyés"     value={stats.pending}  icon={<Clock size={16} />}       format="number" />
-          <KpiCard label="Signés"      value={stats.signed}   icon={<TrendingUp size={16} />}  format="number" />
-          <KpiCard label="CA signé"    value={stats.revenue}  icon={<DollarSign size={16} />}  format="price" glint />
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
+          <KpiCard label="Total leads"        value={stats.total}      icon={<Users size={16} />}      format="number" />
+          <KpiCard label="Envoyés"            value={stats.pending}    icon={<Clock size={16} />}       format="number" />
+          <KpiCard label="Signés"             value={stats.signed}     icon={<TrendingUp size={16} />}  format="number" />
+          <KpiCard label="CA signé"           value={stats.revenue}    icon={<DollarSign size={16} />}  format="price" glint />
+          <div className="hidden lg:block">
+            <KpiCard label="Taux conversion"  value={stats.conversion} icon={<Target size={16} />}      format="percent" />
+          </div>
         </div>
 
         {/* Pipeline funnel */}

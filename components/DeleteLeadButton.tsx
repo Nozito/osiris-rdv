@@ -16,9 +16,9 @@ export function DeleteLeadButton({ leadId, onDeleted }: Props) {
   const handleDelete = async () => {
     setStep("loading");
     const supabase = createClient();
-    const { error, count } = await supabase
+    const { error } = await supabase
       .from("leads")
-      .delete({ count: "exact" })
+      .delete()
       .eq("id", leadId);
 
     if (error) {
@@ -26,13 +26,8 @@ export function DeleteLeadButton({ leadId, onDeleted }: Props) {
       setStep("idle");
       return;
     }
-    if (count === 0) {
-      toast.error("Impossible de supprimer ce lead");
-      setStep("idle");
-      return;
-    }
 
-    toast.success("Brouillon supprimé");
+    toast.success("Lead supprimé");
     onDeleted?.();
   };
 

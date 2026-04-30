@@ -10,17 +10,24 @@ function rateLabel(rate: number): string {
   return `+${Math.round(rate * 100)}%`;
 }
 
+const DEADLINE_NOTES: Record<string, { text: string; color: string }> = {
+  standard: { text: "Délai confortable — qualité optimale garantie",              color: "text-emerald-400" },
+  express:  { text: "⚡ Production accélérée — quelques compromis possibles",      color: "text-amber-400"  },
+  urgent:   { text: "🔥 Mode urgence — équipe dédiée, tarif majoré",              color: "text-orange-400" },
+};
+
 export function CStep5Delai() {
   const { data, update, quote } = useConfigurator();
+  const selectedDeadline = DEADLINES.find((d) => d.id === data.deadlineId);
 
   return (
     <div className="py-4">
       <h2 className="text-lg font-bold text-textc font-display mb-1">Délai de réalisation</h2>
       <p className="text-sm text-muted mb-6">
-        Le délai s'applique sur le sous-total HT. La TVA est calculée après.
+        La majoration s'applique sur le sous-total HT.
       </p>
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 mb-5">
         {DEADLINES.map((dl) => {
           const selected = data.deadlineId === dl.id;
           const isUrgent = dl.rate > 0;
@@ -29,14 +36,14 @@ export function CStep5Delai() {
               key={dl.id}
               onClick={() => update({ deadlineId: dl.id })}
               className={`
-                flex items-center gap-4 px-5 py-4 rounded-xl border text-left transition-all duration-150
+                flex items-center gap-4 px-5 py-4 rounded-xl border text-left transition-all duration-100
+                hover:scale-[1.02] active:scale-[0.97]
                 ${selected
-                  ? "border-accent/50 bg-accent/8 shadow-[0_0_16px_-4px_rgba(37,99,235,0.2)]"
+                  ? "border-accent/50 bg-accent/8 shadow-[0_0_0_1px_rgba(37,99,235,0.4),0_4px_24px_-4px_rgba(37,99,235,0.25)]"
                   : "border-white/8 bg-surface hover:border-white/20 hover:bg-surface2"
                 }
               `}
             >
-              {/* Radio dot */}
               <div
                 className={`
                   w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all
@@ -53,7 +60,6 @@ export function CStep5Delai() {
                 <p className="text-xs text-faint mt-0.5">{dl.sublabel}</p>
               </div>
 
-              {/* OSIRIS CRM — pricing configurator: deadline rate display */}
               <span
                 className={`
                   text-sm font-bold shrink-0 px-2.5 py-1 rounded-lg
@@ -70,13 +76,35 @@ export function CStep5Delai() {
         })}
       </div>
 
-      {/* Live surcharge preview */}
-      {quote.deadlineSurcharge > 0 && (
-        <div className="mt-4 rounded-xl border border-orange-400/20 bg-orange-400/5 px-4 py-3 flex items-center justify-between">
-          <span className="text-sm text-orange-300/80">Majoration délai</span>
-          <span className="text-sm font-bold text-orange-300">
-            +{quote.deadlineSurcharge.toLocaleString("fr-FR")} €
-          </span>
+      {/* Impact block */}
+      {selectedDeadline && (
+        <div className="rounded-xl border border-white/8 bg-surface p-4">
+          <p className="text-[10px] font-bold text-faint uppercase tracking-widest mb-3">Impact sur votre devis</p>
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted">Sous-total HT</span>
+              <span className="text-textc font-medium">{quote.subtotalHT.toLocaleString("fr-FR")} €</span>
+            </div>
+            {quote.deadlineSurcharge > 0 && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-orange-400/80">
+                  Majoration {selectedDeadline.label} (+{Math.round(selectedDeadline.rate * 100)}%)
+                </span>
+                <span className="text-orange-400 font-semibold">
+                  +{quote.deadlineSurcharge.toLocaleString("fr-FR")} €
+                </span>
+              </div>
+            )}
+            <div className="flex items-center justify-between text-sm pt-2 mt-1 border-t border-white/8">
+              <span className="font-semibold text-textc">Total HT</span>
+              <span className="font-black text-textc">{quote.totalHT.toLocaleString("fr-FR")} €</span>
+            </div>
+          </div>
+          {selectedDeadline.id in DEADLINE_NOTES && (
+            <p className={`text-xs mt-3 pt-3 border-t border-white/8 ${DEADLINE_NOTES[selectedDeadline.id].color}`}>
+              {DEADLINE_NOTES[selectedDeadline.id].text}
+            </p>
+          )}
         </div>
       )}
     </div>
