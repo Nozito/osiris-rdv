@@ -506,39 +506,34 @@ export function ConfiguratorShell({
               </div>
             </div>
 
-            {/* Desktop : stepper horizontal (masqué sur lg — remplacé par stepper vertical col 1) */}
-            <div className="hidden sm:flex lg:hidden items-center gap-0.5">
+            {/* Desktop : stepper horizontal (sm → lg) */}
+            <div className="hidden sm:flex lg:hidden items-center gap-1">
               {STEPS.map((step, i) => {
-                const prevPhase  = i > 0 ? STEPS[i - 1].phase : step.phase;
-                const phaseChange = i > 0 && step.phase !== prevPhase;
                 const isCompleted = i < currentStep;
                 const isCurrent   = i === currentStep;
                 const isVisited   = visitedSteps.has(i);
                 const canClick    = isVisited && i !== currentStep;
-
-                const dotColor = isCompleted
-                  ? "bg-accent text-white shadow-[0_0_8px_rgba(37,99,235,0.5)]"
-                  : isCurrent
-                  ? "bg-accent/20 text-accent border border-accent/50"
-                  : "bg-surface2 text-faint border border-white/8";
+                const phaseChange = i > 0 && STEPS[i - 1].phase !== step.phase;
 
                 return (
-                  <div key={i} className="flex items-center gap-0.5 flex-1 min-w-0">
-                    {phaseChange && (
-                      <div className="w-1.5 h-1.5 rounded-full bg-white/20 shrink-0 mx-0.5" />
-                    )}
+                  <div key={i} className="flex items-center gap-1 flex-1 min-w-0">
+                    {phaseChange && <div className="w-px h-4 bg-white/15 mx-0.5 shrink-0" />}
                     <button
                       disabled={!canClick}
                       onClick={() => canClick && navigate(i)}
-                      className={`shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-300 ${dotColor} ${canClick ? "cursor-pointer hover:scale-110" : "cursor-default"}`}
+                      className={[
+                        "stepper-step",
+                        isCompleted ? "done" : "",
+                        isCurrent   ? "current" : "",
+                        isVisited   ? "visited" : "",
+                      ].filter(Boolean).join(" ")}
                     >
-                      {isCompleted ? "✓" : step.short}
+                      <div className="stepper-dot" style={{ width: 22, height: 22, fontSize: "0.65rem" }}>
+                        {isCompleted ? "✓" : step.short}
+                      </div>
                     </button>
-                    <span className={`hidden lg:block text-[10px] truncate transition-colors mr-0.5 ${isCurrent ? "text-textc font-medium" : "text-faint"}`}>
-                      {step.label}
-                    </span>
                     {i < STEPS.length - 1 && (
-                      <motion.div className="flex-1 h-px mx-0.5 bg-white/8 relative overflow-hidden" style={{ minWidth: 4 }}>
+                      <motion.div className="flex-1 h-px bg-white/8 relative overflow-hidden mx-0.5" style={{ minWidth: 4 }}>
                         <motion.div
                           className="absolute inset-y-0 left-0 bg-accent/50 rounded-full"
                           initial={false}
@@ -558,7 +553,7 @@ export function ConfiguratorShell({
         <div className="flex-1 flex max-w-[1200px] mx-auto w-full">
 
           {/* Col 1 (lg only) : stepper vertical avec phases groupées */}
-          <nav className="hidden lg:flex flex-col w-48 shrink-0 sticky top-[72px] self-start pt-6 pb-4 px-4 h-[calc(100vh-72px)]">
+          <nav className="hidden lg:flex flex-col w-48 shrink-0 sticky top-[72px] self-start pt-6 pb-4 px-3 h-[calc(100vh-72px)] overflow-y-auto">
             {STEPS.map((step, i) => {
               const isCompleted = i < currentStep;
               const isCurrent   = i === currentStep;
@@ -569,9 +564,9 @@ export function ConfiguratorShell({
               return (
                 <div key={i}>
                   {phaseChange && (
-                    <div className="flex items-center gap-2 my-2">
+                    <div className="flex items-center gap-2 my-2.5">
                       <div className="flex-1 h-px bg-white/8" />
-                      <span className="text-[9px] font-bold text-faint uppercase tracking-wider">
+                      <span className="text-[9px] font-bold text-faint uppercase tracking-widest">
                         {PHASE_LABELS[step.phase]}
                       </span>
                       <div className="flex-1 h-px bg-white/8" />
@@ -580,19 +575,20 @@ export function ConfiguratorShell({
                   <button
                     disabled={!canClick}
                     onClick={() => canClick && navigate(i)}
-                    className={`
-                      w-full flex items-center gap-2 py-1.5 px-2 rounded-lg text-left transition-all
-                      ${isCurrent ? "bg-accent/10 text-textc" : "text-faint hover:text-muted"}
-                      ${canClick ? "cursor-pointer" : "cursor-default"}
-                    `}
+                    className={[
+                      "stepper-step w-full flex-row items-center justify-start gap-2.5 py-1.5 px-2 rounded-lg text-left",
+                      isCompleted ? "done" : "",
+                      isCurrent   ? "current" : "",
+                      isVisited   ? "visited" : "",
+                      isCurrent ? "bg-accent/10" : "hover:bg-white/[0.03]",
+                      canClick ? "cursor-pointer" : "cursor-default",
+                    ].filter(Boolean).join(" ")}
+                    style={{ display: "flex", flexDirection: "row", opacity: isCurrent ? 1 : isVisited ? 0.75 : 0.35 }}
                   >
-                    <div className={`
-                      shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all
-                      ${isCompleted ? "bg-accent text-white shadow-[0_0_6px_rgba(37,99,235,0.5)]" : isCurrent ? "bg-accent/20 text-accent border border-accent/50" : "bg-surface2 text-faint border border-white/8"}
-                    `}>
+                    <div className="stepper-dot shrink-0" style={{ width: 24, height: 24, fontSize: "0.68rem" }}>
                       {isCompleted ? "✓" : step.short}
                     </div>
-                    <span className={`text-[11px] truncate ${isCurrent ? "font-medium text-textc" : "text-faint"}`}>
+                    <span className={`text-[11px] truncate ${isCurrent ? "font-semibold text-textc" : "text-faint"}`}>
                       {step.label}
                     </span>
                   </button>
