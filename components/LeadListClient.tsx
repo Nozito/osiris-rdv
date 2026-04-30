@@ -211,77 +211,98 @@ export function LeadListClient({ initialLeads }: Props) {
           </button>
         </div>
       ) : (
-        <div className="divide-y divide-white/8">
-          {filtered.map((lead, i) => (
-            <div
-              key={lead.id}
-              className="lead-row-enter flex items-center gap-2 sm:gap-3 px-4 sm:px-5 py-3 sm:py-3.5 group"
-              style={{ animationDelay: `${i * 40}ms` }}
-              data-lead-row
-              data-status={lead.status}
-            >
-              {/* Lien principal */}
-              <Link
-                href={`/rdv/${lead.id}`}
-                className="flex-1 min-w-0 flex items-center gap-3"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <p className="text-sm font-medium text-textc truncate group-hover:text-accent transition-colors">
-                      {lead.client_name || "Sans nom"}
-                    </p>
-                    {lead.client_company && (
-                      <span className="text-xs text-faint truncate hidden sm:block">
-                        — {lead.client_company}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted truncate">
-                    {lead.project_type
-                      ? lead.project_type.replace(/-/g, " ")
-                      : "Projet non défini"}
-                  </p>
-                </div>
+        <div className="overflow-x-auto">
+          <table className="leads-table">
+            <thead>
+              <tr>
+                <th>Client</th>
+                <th className="hidden sm:table-cell">Offre</th>
+                <th>Prix HT</th>
+                <th className="hidden sm:table-cell">Score</th>
+                <th className="hidden md:table-cell">Mis à jour</th>
+                <th>Statut</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((lead, i) => {
+                const totalTTC = lead.quote_data?.totalTTC ?? lead.total_one_time;
+                const score = calcLeadScore(lead.quote_data ?? {}, totalTTC);
+                const priceStr = lead.quote_data
+                  ? lead.quote_data.totalTTC.toLocaleString("fr-FR") + " €"
+                  : formatPrice(lead.adjusted_price ?? lead.total_one_time);
 
-                {/* Prix + score + date */}
-                <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                  {/* Badge score */}
-                  {(() => {
-                    const totalTTC = lead.quote_data?.totalTTC ?? lead.total_one_time;
-                    const score = calcLeadScore(lead.quote_data ?? {}, totalTTC);
-                    return (
-                      <span className={`hidden sm:flex items-center justify-center w-7 h-7 rounded-full text-[10px] font-bold border ${leadScoreColor(score)}`}>
+                return (
+                  <tr
+                    key={lead.id}
+                    className="lead-row-enter group"
+                    style={{ animationDelay: `${i * 35}ms` }}
+                    data-lead-row
+                    data-status={lead.status}
+                  >
+                    {/* Client */}
+                    <td data-label="Client">
+                      <Link href={`/rdv/${lead.id}`} className="block">
+                        <p className="text-sm font-medium text-textc group-hover:text-accent transition-colors truncate max-w-[160px]">
+                          {lead.client_name || "Sans nom"}
+                        </p>
+                        {lead.client_company && (
+                          <p className="text-xs text-faint truncate max-w-[160px]">{lead.client_company}</p>
+                        )}
+                      </Link>
+                    </td>
+
+                    {/* Offre */}
+                    <td data-label="Offre" className="hidden sm:table-cell">
+                      <span className="text-xs text-muted">
+                        {lead.project_type ? lead.project_type.replace(/-/g, " ") : "—"}
+                      </span>
+                    </td>
+
+                    {/* Prix */}
+                    <td data-label="Prix">
+                      <span className={`text-sm font-semibold tabular-nums ${lead.status === "signed" ? "text-success" : lead.status === "lost" ? "text-faint line-through" : "text-textc"}`}>
+                        {priceStr}
+                      </span>
+                    </td>
+
+                    {/* Score */}
+                    <td data-label="Score" className="hidden sm:table-cell">
+                      <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-[10px] font-bold border ${leadScoreColor(score)}`}>
                         {score}
                       </span>
-                    );
-                  })()}
-                  <span className={`text-xs sm:text-sm font-semibold ${lead.status === "signed" ? "text-success" : lead.status === "lost" ? "text-faint line-through" : "text-textc"}`}>
-                    {lead.quote_data
-                      ? lead.quote_data.totalTTC.toLocaleString("fr-FR") + " €"
-                      : formatPrice(lead.adjusted_price ?? lead.total_one_time)}
-                  </span>
-                  <span className="text-xs text-faint hidden md:block whitespace-nowrap">
-                    {timeAgo(lead.updated_at ?? lead.created_at)}
-                  </span>
-                </div>
-              </Link>
+                    </td>
 
-              {/* Quick status picker — cliquable sans naviguer */}
-              <QuickStatusPicker
-                leadId={lead.id}
-                current={lead.status}
-                onChange={(next) => updateStatus(lead.id, next)}
-              />
+                    {/* Date */}
+                    <td data-label="Mis à jour" className="hidden md:table-cell">
+                      <span className="text-xs text-faint whitespace-nowrap">
+                        {timeAgo(lead.updated_at ?? lead.created_at)}
+                      </span>
+                    </td>
 
-              {/* Supprimer (brouillons uniquement) */}
-              {lead.status === "draft" && (
-                <DeleteLeadButton
-                  leadId={lead.id}
-                  onDeleted={() => removeLead(lead.id)}
-                />
-              )}
-            </div>
-          ))}
+                    {/* Statut */}
+                    <td data-label="Statut">
+                      <QuickStatusPicker
+                        leadId={lead.id}
+                        current={lead.status}
+                        onChange={(next) => updateStatus(lead.id, next)}
+                      />
+                    </td>
+
+                    {/* Actions */}
+                    <td>
+                      {lead.status === "draft" && (
+                        <DeleteLeadButton
+                          leadId={lead.id}
+                          onDeleted={() => removeLead(lead.id)}
+                        />
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

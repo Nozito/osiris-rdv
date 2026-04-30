@@ -253,6 +253,66 @@ textarea:focus-visible {
 }
 
 /* ============================================================
+   OSIRIS UX — Leads table (Linear/Notion style)
+   ============================================================ */
+
+.leads-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.leads-table th {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-faint, #45455e);
+  padding: 0 16px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border, rgba(255,255,255,0.07));
+  white-space: nowrap;
+}
+.leads-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border, rgba(255,255,255,0.07));
+  font-size: 0.875rem;
+  vertical-align: middle;
+}
+.leads-table tbody tr:last-child td { border-bottom: none; }
+.leads-table tbody tr:hover td { background: rgba(255,255,255,0.018); }
+
+@media (max-width: 640px) {
+  .leads-table thead { display: none; }
+  .leads-table tbody tr {
+    display: block;
+    background: var(--color-surface, #0e0e1a);
+    border: 1px solid var(--border, rgba(255,255,255,0.07));
+    border-radius: var(--r-md, 10px);
+    margin-bottom: 8px;
+    padding: 12px 14px;
+  }
+  .leads-table tbody tr td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: none;
+    padding: 4px 0;
+  }
+  .leads-table tbody tr td:empty { display: none; }
+  .leads-table td::before {
+    content: attr(data-label);
+    font-size: 0.68rem;
+    color: var(--color-faint, #45455e);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-weight: 600;
+    flex-shrink: 0;
+    margin-right: 8px;
+  }
+  .leads-table td:not([data-label])::before { display: none; }
+}
+
+/* ============================================================
    OSIRIS UX — Bento grid dashboard
    ============================================================ */
 
