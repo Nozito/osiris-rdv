@@ -85,11 +85,12 @@ export function BottomNav({ isAdmin, userEmail }: Props) {
   return (
     <nav
       className="
-        sm:hidden fixed bottom-0 left-0 right-0 z-40
+        sm:hidden fixed bottom-0 left-0 right-0 z-50
         bg-[#0a0a14]/97 backdrop-blur-xl
         border-t border-white/8
         shadow-[0_-2px_20px_rgba(0,0,0,0.4)]
       "
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       {/* Bouton + flottant — absolute, centré, au-dessus de la barre */}
       <div className="absolute -top-[26px] left-1/2 -translate-x-1/2 z-10">

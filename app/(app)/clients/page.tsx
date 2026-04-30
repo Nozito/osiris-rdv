@@ -65,7 +65,7 @@ export default async function ClientsPage() {
         </div>
 
         {/* KPI cards */}
-        <div className="grid grid-cols-3 gap-3 mb-5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
           <KpiCard label="Clients"     value={totalClients} icon={<Users size={16} />}      format="number" />
           <KpiCard label="Leads total" value={totalLeads}   icon={<FileText size={16} />}   format="number" />
           <KpiCard label="CA signé"    value={totalRevenue} icon={<TrendingUp size={16} />} format="price" glint />

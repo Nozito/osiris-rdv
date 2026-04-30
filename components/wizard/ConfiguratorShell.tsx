@@ -506,8 +506,8 @@ export function ConfiguratorShell({
               </div>
             </div>
 
-            {/* Desktop : stepper horizontal (sm → lg) */}
-            <div className="hidden sm:flex lg:hidden items-center gap-1">
+            {/* Desktop : stepper horizontal (sm → lg) — scrollable */}
+            <div className="hidden sm:flex lg:hidden items-center gap-1 overflow-x-auto scrollbar-none">
               {STEPS.map((step, i) => {
                 const isCompleted = i < currentStep;
                 const isCurrent   = i === currentStep;
@@ -516,7 +516,7 @@ export function ConfiguratorShell({
                 const phaseChange = i > 0 && STEPS[i - 1].phase !== step.phase;
 
                 return (
-                  <div key={i} className="flex items-center gap-1 flex-1 min-w-0">
+                  <div key={i} className="flex items-center gap-1 shrink-0">
                     {phaseChange && <div className="w-px h-4 bg-white/15 mx-0.5 shrink-0" />}
                     <button
                       disabled={!canClick}
@@ -533,14 +533,14 @@ export function ConfiguratorShell({
                       </div>
                     </button>
                     {i < STEPS.length - 1 && (
-                      <motion.div className="flex-1 h-px bg-white/8 relative overflow-hidden mx-0.5" style={{ minWidth: 4 }}>
+                      <div className="w-4 h-px bg-white/8 relative overflow-hidden mx-0.5 shrink-0">
                         <motion.div
                           className="absolute inset-y-0 left-0 bg-accent/50 rounded-full"
                           initial={false}
                           animate={{ width: isCompleted ? "100%" : "0%" }}
                           transition={{ duration: 0.35 }}
                         />
-                      </motion.div>
+                      </div>
                     )}
                   </div>
                 );

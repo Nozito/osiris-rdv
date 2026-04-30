@@ -396,6 +396,14 @@ textarea:focus-visible {
 }
 
 /* ============================================================
+   OSIRIS UX — Safe area clearance for BottomNav (iOS home indicator)
+   ============================================================ */
+
+.pb-nav-safe {
+  padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
+}
+
+/* ============================================================
    OSIRIS UX — Reduced motion: disable all animations
    ============================================================ */
 
