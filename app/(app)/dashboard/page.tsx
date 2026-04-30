@@ -123,20 +123,20 @@ export default async function DashboardPage() {
         </div>
 
         {/* Row 2 — Taux conversion + Pipeline */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div className="bento-card flex flex-col justify-between">
             <div className="flex items-center justify-between mb-3">
               <span className="text-[10px] font-semibold text-faint uppercase tracking-widest">Conversion</span>
-              <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center text-accent">
-                <Target size={15} />
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-accent/10 flex items-center justify-center text-accent">
+                <Target size={14} />
               </div>
             </div>
-            <p className="text-3xl font-bold text-textc tabular-nums font-display">{conversionRate}%</p>
+            <p className="text-2xl sm:text-3xl font-bold text-textc tabular-nums font-display">{conversionRate}%</p>
             <p className="text-xs text-faint mt-2">
               {stats.signed} / {stats.total} lead{stats.total !== 1 ? "s" : ""}
             </p>
           </div>
-          <div className="lg:col-span-3">
+          <div className="col-span-1 lg:col-span-3">
             <LeadPipeline {...pipeline} />
           </div>
         </div>

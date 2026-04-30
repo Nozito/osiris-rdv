@@ -30,7 +30,7 @@ export function LeadPipeline({ draft, sent, signed, lost }: Props) {
   ];
 
   return (
-    <div className="rounded-card bg-surface border border-white/8 p-4 mb-5">
+    <div className="rounded-card bg-surface border border-white/8 p-4 h-full">
       <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-4">
         Pipeline
       </p>
@@ -39,27 +39,27 @@ export function LeadPipeline({ draft, sent, signed, lost }: Props) {
         {stages.map((stage) => {
           const pct = total > 0 ? (stage.count / total) * 100 : 0;
           return (
-            <div key={stage.label} className="flex items-center gap-3">
-              {/* Label */}
-              <span className="text-xs text-muted w-20 shrink-0">{stage.label}</span>
+            <div key={stage.label} className="flex items-center gap-2">
+              {/* Label — tronqué si trop long */}
+              <span className="text-xs text-muted w-16 shrink-0 truncate">{stage.label}</span>
 
               {/* Barre */}
-              <div className={`flex-1 h-2 rounded-full ${stage.track} overflow-hidden`}>
+              <div className={`flex-1 h-2 rounded-full ${stage.track} overflow-hidden min-w-0`}>
                 <motion.div
                   className={`h-full rounded-full ${stage.color}`}
                   initial={{ width: 0 }}
                   animate={{ width: `${pct}%` }}
-                  transition={{ duration: 0.7, ease: "easeOut", delay: 0.1 }}
+                  transition={{ duration: 0.55, ease: "easeOut", delay: 0.05 }}
                 />
               </div>
 
               {/* Count */}
-              <span className="text-xs font-semibold text-textc w-5 text-right shrink-0">
+              <span className="text-xs font-semibold text-textc w-4 text-right shrink-0">
                 {stage.count}
               </span>
 
-              {/* Valeur */}
-              <span className="text-xs text-muted w-24 text-right shrink-0 hidden sm:block">
+              {/* Valeur — masquée sur mobile */}
+              <span className="text-xs text-muted w-20 text-right shrink-0 hidden sm:block tabular-nums">
                 {stage.value > 0 ? formatPrice(stage.value) : "—"}
               </span>
             </div>
@@ -67,11 +67,11 @@ export function LeadPipeline({ draft, sent, signed, lost }: Props) {
         })}
       </div>
 
-      {/* Totaux rapides */}
+      {/* Totaux */}
       <div className="mt-4 pt-3 border-t border-white/8 flex items-center justify-between text-xs text-muted">
-        <span>{total} lead{total > 1 ? "s" : ""} au total</span>
+        <span>{total} lead{total > 1 ? "s" : ""}</span>
         {signed.value > 0 && (
-          <span className="text-success font-semibold">
+          <span className="text-success font-semibold tabular-nums">
             {formatPrice(signed.value)} signés
           </span>
         )}

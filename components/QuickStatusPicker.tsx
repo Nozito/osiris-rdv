@@ -76,8 +76,8 @@ export function QuickStatusPicker({ leadId, current, onChange }: Props) {
         disabled={loading}
         className={`
           inline-flex items-center gap-1.5 rounded-full border font-medium
-          text-xs px-2 py-0.5
-          transition-all duration-200 hover:scale-[1.05]
+          text-xs px-2.5 py-1 min-h-[28px]
+          transition-all duration-200 hover:scale-[1.03]
           cursor-pointer select-none
           ${status === "draft"  ? "bg-surface2 text-muted border-white/10" : ""}
           ${status === "sent"   ? "bg-accent/15 text-accent border-accent/25" : ""}
@@ -95,9 +95,8 @@ export function QuickStatusPicker({ leadId, current, onChange }: Props) {
           className="
             absolute right-0 top-full mt-1.5 z-50
             w-36 rounded-xl bg-surface2 border border-white/10
-            shadow-2xl shadow-black/40
+            shadow-2xl shadow-black/50
             overflow-hidden
-            animate-[fadeInUp_0.15s_ease-out]
           "
         >
           {STATUSES.map((s) => (
@@ -105,7 +104,7 @@ export function QuickStatusPicker({ leadId, current, onChange }: Props) {
               key={s.value}
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleSelect(s.value); }}
               className={`
-                w-full flex items-center gap-2 px-3 py-2
+                w-full flex items-center gap-2 px-3 py-2.5
                 text-xs transition-colors text-left
                 ${s.value === status
                   ? `${s.text} bg-white/[0.06]`

@@ -1,18 +1,18 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg:           #070711;
-  --color-surface:      #0e0e1a;
-  --color-surface2:     #16162a;
-  --color-accent:       #6366f1;
-  --color-accent-hover: #818cf8;
-  --color-textc:        #f0f0ff;
-  --color-muted:        #7b7b9a;
-  --color-faint:        #45455e;
+  --color-bg:           #060810;
+  --color-surface:      #0c0e1a;
+  --color-surface2:     #141728;
+  --color-accent:       #2563eb;
+  --color-accent-hover: #3b82f6;
+  --color-textc:        #f0f4ff;
+  --color-muted:        #7b82a0;
+  --color-faint:        #434861;
   --color-success:      #10b981;
   --color-warning:      #f59e0b;
   --color-danger:       #ef4444;
-  --color-info:         #6366f1;
+  --color-info:         #2563eb;
 
   --font-display: "Clash Display", sans-serif;
   --font-body: "Satoshi", sans-serif;
@@ -22,11 +22,11 @@
 }
 
 :root {
-  --glow:           rgba(99, 102, 241, 0.3);
+  --glow:           rgba(37, 99, 235, 0.3);
   --border:         rgba(255, 255, 255, 0.07);
   --border-strong:  rgba(255, 255, 255, 0.14);
-  --border-accent:  rgba(99, 102, 241, 0.5);
-  --accent-dim:     rgba(99, 102, 241, 0.12);
+  --border-accent:  rgba(37, 99, 235, 0.5);
+  --accent-dim:     rgba(37, 99, 235, 0.12);
   --r-sm:  6px;
   --r-md:  10px;
   --r-lg:  16px;
@@ -47,12 +47,13 @@ html {
 
 body {
   min-height: 100%;
-  background: #070711;
-  color: #f0f0ff;
+  background: #060810;
+  color: #f0f4ff;
   font-family: "Satoshi", sans-serif;
   -webkit-font-smoothing: antialiased;
-  /* OSIRIS UX — prevent horizontal overflow */
   overflow-x: hidden;
+  /* GPU layer for smooth scrolling */
+  -webkit-overflow-scrolling: touch;
 }
 
 ::selection {
@@ -325,14 +326,17 @@ textarea:focus-visible {
   .bento-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 640px) {
-  .bento-grid { grid-template-columns: 1fr; gap: 8px; }
+  .bento-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
 }
 .bento-card {
-  background: var(--color-surface, #0e0e1a);
+  background: var(--color-surface, #0c0e1a);
   border: 1px solid var(--border, rgba(255,255,255,0.07));
   border-radius: var(--r-lg, 16px);
-  padding: 20px;
+  padding: 16px;
   transition: border-color 0.2s;
+}
+@media (min-width: 640px) {
+  .bento-card { padding: 20px; }
 }
 .bento-card:hover { border-color: var(--border-strong, rgba(255,255,255,0.14)); }
 .bento-span-2 { grid-column: span 2; }
@@ -384,10 +388,10 @@ textarea:focus-visible {
   transition: all 0.2s;
 }
 .stepper-step.current .stepper-dot {
-  border-color: var(--color-accent, #6366f1);
-  background: var(--accent-dim, rgba(99,102,241,0.12));
-  color: var(--color-accent, #6366f1);
-  box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+  border-color: var(--color-accent, #2563eb);
+  background: var(--accent-dim, rgba(37,99,235,0.12));
+  color: var(--color-accent, #2563eb);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
 }
 .stepper-step.done .stepper-dot {
   border-color: var(--color-success, #10b981);
@@ -401,6 +405,48 @@ textarea:focus-visible {
 
 .pb-nav-safe {
   padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
+}
+
+/* ============================================================
+   OSIRIS UX — Performance mobile/tablette
+   ============================================================ */
+
+/* Désactive backdrop-filter sur mobile/tablette (trop lourd sur GPU) */
+@media (max-width: 1023px) {
+  header, footer, nav, aside {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  /* Opacify les fonds semi-transparents pour compenser */
+  header { background-color: #060810 !important; }
+  footer { background-color: #060810 !important; }
+  nav.bottom-nav-mobile { background-color: #08090f !important; }
+}
+
+/* Élimine le stagger sur mobile (trop d'animations = jank) */
+@media (max-width: 639px) {
+  .lead-row-enter {
+    animation-delay: 0ms !important;
+    animation-duration: 0.15s !important;
+  }
+}
+
+/* GPU layer pour les éléments sticky/fixed (évite les repaints) */
+header[class*="sticky"],
+footer[class*="sticky"],
+nav[class*="fixed"] {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Touch: accélération native, pas de délai 300ms */
+a, button, [role="button"] {
+  touch-action: manipulation;
+}
+
+/* Mobile: scrollbar invisible */
+@media (max-width: 1023px) {
+  ::-webkit-scrollbar { width: 0; height: 0; }
 }
 
 /* ============================================================

@@ -7,7 +7,7 @@ import { toast } from "@/components/ui/Toast";
 
 interface Props {
   leadId: string;
-  onDeleted?: () => void; // callback pour retirer la ligne du DOM sans refresh
+  onDeleted?: () => void;
 }
 
 export function DeleteLeadButton({ leadId, onDeleted }: Props) {
@@ -16,14 +16,15 @@ export function DeleteLeadButton({ leadId, onDeleted }: Props) {
   const handleDelete = async () => {
     setStep("loading");
     const supabase = createClient();
-    const { error } = await supabase
-      .from("leads")
-      .delete()
-      .eq("id", leadId);
+
+    // Supprimer les quote_tokens liés avant le lead (FK sans CASCADE en production)
+    await supabase.from("quote_tokens").delete().eq("lead_id", leadId);
+
+    const { error } = await supabase.from("leads").delete().eq("id", leadId);
 
     if (error) {
-      console.error("[DeleteLeadButton] error:", error.code, error.message);
-      toast.error(`Suppression échouée (${error.code ?? error.message})`);
+      console.error("[DeleteLeadButton]", error.code, error.message);
+      toast.error("Suppression échouée — " + (error.message ?? error.code));
       setStep("idle");
       return;
     }
@@ -36,12 +37,7 @@ export function DeleteLeadButton({ leadId, onDeleted }: Props) {
     return (
       <button
         onClick={(e) => { e.preventDefault(); setStep("confirm"); }}
-        className="
-          p-1.5 rounded-lg text-faint/40 hover:text-danger hover:bg-danger/8
-          transition-all duration-150
-          group-hover:text-faint
-          min-w-[28px] flex items-center justify-center
-        "
+        className="p-1.5 rounded-lg text-faint/40 hover:text-danger hover:bg-danger/8 transition-all duration-150 group-hover:text-faint min-w-[28px] flex items-center justify-center"
         title="Supprimer le brouillon"
       >
         <Trash2 size={14} />
@@ -51,12 +47,12 @@ export function DeleteLeadButton({ leadId, onDeleted }: Props) {
 
   if (step === "confirm") {
     return (
-      <div className="flex items-center gap-1 shrink-0 animate-[fadeInUp_0.15s_ease-out]">
-        <span className="text-xs text-muted pr-1">Supprimer ?</span>
+      <div className="flex items-center gap-1 shrink-0">
+        <span className="text-xs text-muted pr-1 hidden sm:inline">Supprimer ?</span>
         <button
           onClick={(e) => { e.preventDefault(); handleDelete(); }}
-          className="p-1.5 rounded-lg text-danger hover:bg-danger/15 transition-all font-medium"
-          title="Confirmer"
+          className="p-1.5 rounded-lg text-danger hover:bg-danger/15 transition-all"
+          title="Confirmer la suppression"
         >
           <Check size={14} />
         </button>

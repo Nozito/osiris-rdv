@@ -66,11 +66,10 @@ export function DashboardHeader({ isAdmin = false, userEmail = "" }: Props) {
   return (
     <header className="
       border-b border-white/8
-      bg-[#0a0a14]/80 backdrop-blur-xl
+      bg-[#060810]
       sticky top-0 z-20
-      shadow-[0_1px_0_rgba(37,99,235,0.12)]
     ">
-      <div className="max-w-6xl mx-auto px-4 h-14 flex items-center gap-5">
+      <div className="max-w-6xl mx-auto px-4 h-12 sm:h-14 flex items-center gap-4 sm:gap-5">
 
         {/* ── Brand ── */}
         <Link href="/dashboard" className="flex items-baseline gap-1.5 group shrink-0 mr-2">
@@ -187,20 +186,34 @@ export function DashboardHeader({ isAdmin = false, userEmail = "" }: Props) {
         </div>
 
         {/* ── Mobile : avatar profil seul (la nav est dans BottomNav) ── */}
-        <div ref={profileRef} className="sm:hidden ml-auto relative">
+        <div className="sm:hidden ml-auto relative" ref={profileRef}>
           <button
             onClick={() => setProfileOpen((v) => !v)}
-            className="
-              w-8 h-8 rounded-full
-              bg-accent/15 border border-accent/25
-              flex items-center justify-center
-              text-accent text-[11px] font-bold
-              hover:bg-accent/25 transition-all
-            "
+            className="w-9 h-9 rounded-full bg-accent/15 border border-accent/25 flex items-center justify-center text-accent text-[11px] font-bold"
             title={userEmail}
           >
             {initials}
           </button>
+          {profileOpen && (
+            <div className="absolute right-0 top-full mt-2 w-48 rounded-xl bg-surface2 border border-white/10 shadow-2xl shadow-black/50 overflow-hidden z-50">
+              <div className="px-3.5 py-3 border-b border-white/8">
+                <p className="text-[11px] text-faint truncate">{userEmail || "—"}</p>
+                {isAdmin && (
+                  <span className="mt-1 inline-flex items-center gap-1 text-[10px] text-accent font-medium">
+                    <Shield size={9} />
+                    Administrateur
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-2.5 px-3.5 py-3 text-sm text-muted hover:text-textc hover:bg-white/[0.05] transition-all text-left"
+              >
+                <LogOut size={14} />
+                Se déconnecter
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>
