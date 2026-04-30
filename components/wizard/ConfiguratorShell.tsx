@@ -117,19 +117,36 @@ export function ConfiguratorShell({
   const router   = useRouter();
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // BLOC 3.2 — Restauration brouillon localStorage au premier rendu
+  // Restauration brouillon localStorage — vérifie que le lead existe encore en DB
   useEffect(() => {
-    if (existingLeadId) return; // pas de restauration si on édite un lead existant
-    try {
-      const raw = localStorage.getItem(DRAFT_KEY);
-      if (!raw) return;
-      const saved = JSON.parse(raw) as { data: ConfiguratorData; leadId: string | null; savedAt: number };
-      if (!saved.data?.clientFirstName) return;
-      if (Date.now() - saved.savedAt > DRAFT_TTL) { localStorage.removeItem(DRAFT_KEY); return; }
-      setDraftToast(saved);
-    } catch {
-      // ignore parse errors
-    }
+    if (existingLeadId) return;
+    (async () => {
+      try {
+        const raw = localStorage.getItem(DRAFT_KEY);
+        if (!raw) return;
+        const saved = JSON.parse(raw) as { data: ConfiguratorData; leadId: string | null; savedAt: number };
+        if (!saved.data?.clientFirstName) { localStorage.removeItem(DRAFT_KEY); return; }
+        if (Date.now() - saved.savedAt > DRAFT_TTL) { localStorage.removeItem(DRAFT_KEY); return; }
+
+        // Si le draft avait été enregistré en DB, vérifier qu'il existe toujours
+        if (saved.leadId) {
+          const { data: exists } = await supabase
+            .from("leads")
+            .select("id")
+            .eq("id", saved.leadId)
+            .maybeSingle();
+          if (!exists) {
+            // Lead supprimé → on efface le localStorage silencieusement
+            localStorage.removeItem(DRAFT_KEY);
+            return;
+          }
+        }
+
+        setDraftToast(saved);
+      } catch {
+        // ignore parse errors
+      }
+    })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
