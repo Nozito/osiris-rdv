@@ -22,7 +22,8 @@ export function DeleteLeadButton({ leadId, onDeleted }: Props) {
       .eq("id", leadId);
 
     if (error) {
-      toast.error("Erreur lors de la suppression");
+      console.error("[DeleteLeadButton] error:", error.code, error.message);
+      toast.error(`Suppression échouée (${error.code ?? error.message})`);
       setStep("idle");
       return;
     }
